@@ -14,10 +14,16 @@
       --accent-soft: #eff6ff;
       --text-main: #111827;
       --text-muted: #6b7280;
+      --tag-point: #065f46;
+      --tag-point-bg: #ecfdf5;
+      --tag-call: #92400e;
+      --tag-call-bg: #fffbeb;
       --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -32,22 +38,28 @@
 
     .shell {
       width: 100%;
-      max-width: 1120px;
+      max-width: 1100px;
       background: #f9fafb;
       border-radius: 16px;
-      padding: 18px 20px 20px;
+      padding: 18px 18px 16px;
       border: 1px solid var(--border-subtle);
-      box-shadow: 0 20px 40px rgba(15,23,42,0.06);
+      box-shadow: 0 24px 40px rgba(15,23,42,0.06);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
 
-    header {
+    @media (min-width: 1024px) {
+      .shell {
+        padding: 22px 22px 18px;
+      }
+    }
+
+    header.topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
@@ -58,8 +70,8 @@
     }
 
     .brand-logo {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
       background: var(--accent-soft);
       display: flex;
@@ -67,8 +79,8 @@
       justify-content: center;
       color: var(--accent);
       font-weight: 600;
+      font-size: 16px;
       border: 1px solid #bfdbfe;
-      font-size: 15px;
     }
 
     .brand-text h1 {
@@ -92,35 +104,47 @@
     .search-strip {
       background: var(--bg-card);
       border-radius: 12px;
-      padding: 10px 12px;
       border: 1px solid var(--border-subtle);
       box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+      padding: 10px 12px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .search-group {
-      flex: 1 1 220px;
-      min-width: 0;
+    @media (min-width: 700px) {
+      .search-strip {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .search-main {
+      display: flex;
+      flex: 1;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .search-label {
       font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 3px;
+      font-weight: 500;
+      color: #374151;
     }
 
     .input {
-      width: 100%;
       border-radius: 8px;
       border: 1px solid var(--border-strong);
       background: #ffffff;
       color: var(--text-main);
-      padding: 7px 10px;
+      padding: 7px 9px;
       font-size: 13px;
       outline: none;
+      min-width: 180px;
+      flex: 1;
+      max-width: 380px;
       transition: border-color 0.12s ease, box-shadow 0.12s ease;
     }
 
@@ -137,14 +161,16 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 6px;
       border-radius: 8px;
       border: 1px solid transparent;
-      padding: 7px 14px;
+      padding: 7px 12px;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
       background: var(--accent);
       color: #ffffff;
+      transition: background 0.1s ease, border-color 0.1s ease;
       white-space: nowrap;
     }
 
@@ -162,27 +188,37 @@
       background: #f3f4f6;
     }
 
-    .filters {
+    .search-actions {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
-      margin-left: auto;
+      flex-wrap: wrap;
     }
 
-    .filters label {
-      font-size: 11px;
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
       color: var(--text-muted);
-      margin-right: 4px;
     }
 
-    .select {
+    select {
       border-radius: 8px;
       border: 1px solid var(--border-strong);
       background: #ffffff;
-      padding: 6px 10px;
+      padding: 6px 8px;
       font-size: 12px;
-      color: var(--text-main);
+      color: #374151;
+    }
+
+    .status-inline {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .status-inline span {
+      font-weight: 500;
     }
 
     .overview-card {
@@ -190,7 +226,7 @@
       border-radius: 12px;
       border: 1px solid var(--border-subtle);
       box-shadow: 0 1px 2px rgba(15,23,42,0.05);
-      padding: 10px 12px;
+      padding: 10px 12px 12px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -212,145 +248,141 @@
     .overview-subtitle {
       font-size: 12px;
       color: var(--text-muted);
+      margin-top: 2px;
     }
 
-    .badge-soft {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: #e5e7eb;
-      color: #374151;
-      border: 1px solid #d1d5db;
+    .count-label {
+      font-size: 12px;
+      color: var(--text-muted);
     }
 
     .table-wrapper {
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
       overflow-x: auto;
+      background: #ffffff;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 4px;
       font-size: 12px;
     }
 
-    th, td {
-      padding: 7px 6px;
+    th,
+    td {
+      padding: 8px 8px;
       text-align: left;
       border-bottom: 1px solid #e5e7eb;
       vertical-align: top;
     }
 
     th {
+      font-weight: 500;
       font-size: 11px;
       color: var(--text-muted);
-      font-weight: 500;
+      background: #f9fafb;
       white-space: nowrap;
     }
 
-    td {
-      color: #111827;
-    }
-
-    .cell-muted {
-      color: var(--text-muted);
-      font-size: 11px;
+    tr:last-child td {
+      border-bottom: none;
     }
 
     .issuer-cell {
       font-weight: 500;
+    }
+
+    .cell-muted {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .no-data {
+      text-align: center;
+      color: var(--text-muted);
       font-size: 12px;
     }
 
     .tag {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
       border-radius: 999px;
-      border: 1px solid #d1d5db;
-      padding: 2px 7px;
       font-size: 11px;
-      color: #374151;
-      background: #f9fafb;
-      margin-right: 4px;
-      margin-bottom: 3px;
+      font-weight: 500;
     }
 
-    .tag.type-point {
-      border-color: #d1fae5;
-      background: #ecfdf3;
-      color: #166534;
+    .type-point {
+      color: var(--tag-point);
+      background: var(--tag-point-bg);
+      border: 1px solid #bbf7d0;
     }
 
-    .tag.type-callable {
-      border-color: #fee2e2;
-      background: #fef2f2;
-      color: #b91c1c;
-    }
-
-    .no-data {
-      font-size: 12px;
-      color: var(--text-muted);
-      padding: 8px 0;
-    }
-
-    @media (max-width: 700px) {
-      th, td {
-        white-space: nowrap;
-      }
+    .type-callable {
+      color: var(--tag-call);
+      background: var(--tag-call-bg);
+      border: 1px solid #fed7aa;
     }
   </style>
 </head>
 <body>
   <div class="shell">
-    <header>
+    <header class="topbar">
       <div class="brand">
         <div class="brand-logo">SN</div>
         <div class="brand-text">
           <h1>Structured Note Overview</h1>
-          <p>High-level view across multiple CUSIPs.</p>
+          <p>Compare key terms across multiple CUSIPs.</p>
         </div>
       </div>
       <div class="top-note">
-        Columns can later be user-selectable.
+        Internal prototype &nbsp;·&nbsp; Not for client distribution
       </div>
     </header>
 
-    <!-- Top search bar -->
-    <div class="search-strip">
-      <div class="search-group">
-        <div class="search-label">CUSIPs</div>
+    <section class="search-strip">
+      <div class="search-main">
+        <div class="search-label">CUSIP(s)</div>
         <input
           id="cusip-input"
           class="input"
           placeholder="Enter one or more CUSIPs, separated by commas"
         />
+        <div class="search-actions">
+          <button id="add-btn" class="btn">
+            Add to table
+          </button>
+          <button id="clear-btn" class="btn secondary">
+            Clear all
+          </button>
+        </div>
       </div>
-
-      <button id="add-btn" class="btn">Add to table (mock)</button>
-      <button id="clear-btn" class="btn secondary">Clear table</button>
-
-      <div class="filters">
-        <div>
-          <label for="type-filter">Type</label>
-          <select id="type-filter" class="select">
+      <div class="search-actions">
+        <div class="filter-group">
+          <span>Type:</span>
+          <select id="type-filter">
             <option value="all">All</option>
             <option value="point">Point-to-point</option>
             <option value="callable">Callable</option>
           </select>
         </div>
+        <div class="status-inline">
+          Status: <span id="status-text">Idle</span>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Overview table -->
-    <div class="overview-card">
+    <section class="overview-card">
       <div class="overview-header">
         <div>
-          <div class="overview-title">Notes in view</div>
-          <div class="overview-subtitle" id="count-label">
-            No CUSIPs added yet.
+          <div class="overview-title">Overview table</div>
+          <div class="overview-subtitle">
+            Each row represents one structured note identified by CUSIP.
           </div>
         </div>
-        <span class="badge-soft">Columns: Issuer · Underlier · Structure · Fees</span>
+        <div class="count-label" id="count-label">No notes yet.</div>
       </div>
 
       <div class="table-wrapper">
@@ -363,7 +395,7 @@
               <th>Initial values</th>
               <th>Payout profile</th>
               <th>Initial est. value</th>
-              <th>Total fees</th>
+              <th>Total fees paid</th>
               <th>Final observation date</th>
               <th>Type</th>
             </tr>
@@ -377,7 +409,7 @@
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   </div>
 
   <script>
@@ -387,14 +419,63 @@
     const typeFilter = document.getElementById('type-filter');
     const notesBody = document.getElementById('notes-body');
     const countLabel = document.getElementById('count-label');
+    const statusText = document.getElementById('status-text');
 
-    // In real life you would get this from your backend.
-    // Here we just create some predictable mock data per CUSIP.
+    const state = {
+      notes: [] // array of note objects
+    };
+
+    function setStatus(text) {
+      statusText.textContent = text;
+    }
+
+    // 🔁 BACKEND INTEGRATION POINT
+    // This function expects a serverless API route at /api/analyze-cusip
+    // which will:
+    //  - Take { cusip } in the request body
+    //  - Use EDGAR + ChatGPT + market data
+    //  - Return a JSON object with the fields mapped below.
+    async function fetchNoteFromBackend(cusipRaw) {
+      const cusip = cusipRaw.trim().toUpperCase();
+      if (!cusip) return null;
+
+      const response = await fetch('/api/analyze-cusip', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ cusip })
+      });
+
+      if (!response.ok) {
+        throw new Error('Backend returned ' + response.status);
+      }
+
+      const data = await response.json();
+
+      // ⚙️ Map backend JSON → front-end shape used in the table.
+      // Adjust these field names to match your API response.
+      return {
+        cusip,
+        issuer: data.issuerName,
+        underliers: {
+          description: data.underlierSummary,
+          detail: data.underlierDetail
+        },
+        initialValues: data.underlierInitialValues, // e.g. "SPY: 477.25 · QQQ: 400.10"
+        payoutProfile: data.generalPayoutProfile,   // your high-level profile text
+        initialEstValue: data.initialEstimatedValue, // e.g. "97.20% of face"
+        totalFees: data.totalFeesPaid,               // e.g. "2.80% (upfront + ongoing)"
+        finalObs: data.finalObservationDate,         // formatted date string
+        type: data.noteType === 'callable' ? 'callable' : 'point' // normalize
+      };
+    }
+
+    // 🧪 Existing mock generator – used as a fallback when backend is not ready
     function getMockNoteForCusip(cusipRaw) {
       const cusip = cusipRaw.trim().toUpperCase();
       if (!cusip) return null;
 
-      // Very simple toggle to demonstrate type/filter
       const isCallable = cusip.charCodeAt(0) % 2 === 0;
 
       return {
@@ -422,13 +503,9 @@
       };
     }
 
-    const state = {
-      notes: [] // array of mock note objects
-    };
-
     function renderTable() {
       const filter = typeFilter.value;
-      let visible = state.notes;
+      let visible = state.notes.slice();
 
       if (filter === 'point') {
         visible = visible.filter(n => n.type === 'point');
@@ -439,16 +516,16 @@
       notesBody.innerHTML = '';
 
       if (!visible.length) {
-        notesBody.innerHTML = `
-          <tr>
-            <td colspan="9" class="no-data">
-              No notes match the current filter.
-            </td>
-          </tr>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td colspan="9" class="no-data">
+            ${state.notes.length
+              ? 'No notes match the selected filter.'
+              : 'No CUSIPs added yet.'}
+          </td>
         `;
-        countLabel.textContent = state.notes.length
-          ? 'All rows filtered out. Adjust filters to see notes.'
-          : 'No CUSIPs added yet.';
+        notesBody.appendChild(row);
+        countLabel.textContent = 'No notes in view.';
         return;
       }
 
@@ -460,14 +537,14 @@
             <div class="issuer-cell">${note.issuer}</div>
           </td>
           <td>
-            <div>${note.underliers.description}</div>
-            <div class="cell-muted">${note.underliers.detail}</div>
+            <div>${note.underliers.description || ''}</div>
+            <div class="cell-muted">${note.underliers.detail || ''}</div>
           </td>
-          <td>${note.initialValues}</td>
-          <td>${note.payoutProfile}</td>
-          <td>${note.initialEstValue}</td>
-          <td>${note.totalFees}</td>
-          <td>${note.finalObs}</td>
+          <td>${note.initialValues || ''}</td>
+          <td>${note.payoutProfile || ''}</td>
+          <td>${note.initialEstValue || ''}</td>
+          <td>${note.totalFees || ''}</td>
+          <td>${note.finalObs || ''}</td>
           <td>
             <span class="tag ${note.type === 'point' ? 'type-point' : 'type-callable'}">
               ${note.type === 'point' ? 'Point-to-point' : 'Callable'}
@@ -485,25 +562,43 @@
           : `${shown} of ${total} note${total === 1 ? '' : 's'} in view.`;
     }
 
-    addBtn.addEventListener('click', () => {
+    addBtn.addEventListener('click', async () => {
       const input = cusipInput.value;
       if (!input.trim()) return;
 
       const parts = input.split(',');
-      parts.forEach(p => {
-        const note = getMockNoteForCusip(p);
-        if (!note) return;
-        // avoid duplicates by CUSIP
-        if (!state.notes.find(n => n.cusip === note.cusip)) {
-          state.notes.push(note);
-        }
-      });
+      setStatus('Looking up CUSIP(s)…');
 
+      for (const raw of parts) {
+        const c = raw.trim();
+        if (!c) continue;
+
+        // Skip if we already have this CUSIP
+        if (state.notes.find(n => n.cusip === c.toUpperCase())) continue;
+
+        try {
+          // First try the real backend
+          const note = await fetchNoteFromBackend(c);
+          if (note) {
+            state.notes.push(note);
+          }
+        } catch (err) {
+          console.error('Backend error for', c, err);
+          // Fallback: use mock data so the UI still shows *something*
+          const mock = getMockNoteForCusip(c);
+          if (mock) {
+            state.notes.push(mock);
+          }
+        }
+      }
+
+      setStatus('Complete');
       renderTable();
     });
 
     clearBtn.addEventListener('click', () => {
       state.notes = [];
+      setStatus('Idle');
       renderTable();
     });
 
@@ -513,6 +608,7 @@
       if (e.key === 'Enter') addBtn.click();
     });
 
+    // Initial render
     renderTable();
   </script>
 </body>
