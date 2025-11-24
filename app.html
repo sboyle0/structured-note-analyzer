@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Structured Note Overview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg-page: #f3f4f6;
+      --bg-card: #ffffff;
+      --border-subtle: #e5e7eb;
+      --border-strong: #d1d5db;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      background: var(--bg-page);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1120px;
+      background: #f9fafb;
+      border-radius: 16px;
+      padding: 18px 20px 20px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 20px 40px rgba(15,23,42,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-weight: 600;
+      border: 1px solid #bfdbfe;
+      font-size: 15px;
+    }
+
+    .brand-text h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .brand-text p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .top-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .search-strip {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-group {
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+
+    .search-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .input {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: #ffffff;
+      color: var(--text-main);
+      padding: 7px 10px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .input::placeholder {
+      color: #9ca3af;
+    }
+
+    .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px #bfdbfe;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--accent);
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: #1d4ed8;
+    }
+
+    .btn.secondary {
+      background: #ffffff;
+      color: #374151;
+      border-color: var(--border-strong);
+    }
+
+    .btn.secondary:hover {
+      background: #f3f4f6;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-left: auto;
+    }
+
+    .filters label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    .select {
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: #ffffff;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .overview-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .overview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .overview-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .overview-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .badge-soft {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: 7px 6px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    td {
+      color: #111827;
+    }
+
+    .cell-muted {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .issuer-cell {
+      font-weight: 500;
+      font-size: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 2px 7px;
+      font-size: 11px;
+      color: #374151;
+      background: #f9fafb;
+      margin-right: 4px;
+      margin-bottom: 3px;
+    }
+
+    .tag.type-point {
+      border-color: #d1fae5;
+      background: #ecfdf3;
+      color: #166534;
+    }
+
+    .tag.type-callable {
+      border-color: #fee2e2;
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .no-data {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 8px 0;
+    }
+
+    @media (max-width: 700px) {
+      th, td {
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="brand-logo">SN</div>
+        <div class="brand-text">
+          <h1>Structured Note Overview</h1>
+          <p>High-level view across multiple CUSIPs.</p>
+        </div>
+      </div>
+      <div class="top-note">
+        Columns can later be user-selectable.
+      </div>
+    </header>
+
+    <!-- Top search bar -->
+    <div class="search-strip">
+      <div class="search-group">
+        <div class="search-label">CUSIPs</div>
+        <input
+          id="cusip-input"
+          class="input"
+          placeholder="Enter one or more CUSIPs, separated by commas"
+        />
+      </div>
+
+      <button id="add-btn" class="btn">Add to table (mock)</button>
+      <button id="clear-btn" class="btn secondary">Clear table</button>
+
+      <div class="filters">
+        <div>
+          <label for="type-filter">Type</label>
+          <select id="type-filter" class="select">
+            <option value="all">All</option>
+            <option value="point">Point-to-point</option>
+            <option value="callable">Callable</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overview table -->
+    <div class="overview-card">
+      <div class="overview-header">
+        <div>
+          <div class="overview-title">Notes in view</div>
+          <div class="overview-subtitle" id="count-label">
+            No CUSIPs added yet.
+          </div>
+        </div>
+        <span class="badge-soft">Columns: Issuer · Underlier · Structure · Fees</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>CUSIP</th>
+              <th>Issuer</th>
+              <th>Underlier(s)</th>
+              <th>Initial values</th>
+              <th>Payout profile</th>
+              <th>Initial est. value</th>
+              <th>Total fees</th>
+              <th>Final observation date</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="notes-body">
+            <tr>
+              <td colspan="9" class="no-data">
+                No notes yet. Add one or more CUSIPs above to see the grid.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const cusipInput = document.getElementById('cusip-input');
+    const addBtn = document.getElementById('add-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const typeFilter = document.getElementById('type-filter');
+    const notesBody = document.getElementById('notes-body');
+    const countLabel = document.getElementById('count-label');
+
+    // In real life you would get this from your backend.
+    // Here we just create some predictable mock data per CUSIP.
+    function getMockNoteForCusip(cusipRaw) {
+      const cusip = cusipRaw.trim().toUpperCase();
+      if (!cusip) return null;
+
+      // Very simple toggle to demonstrate type/filter
+      const isCallable = cusip.charCodeAt(0) % 2 === 0;
+
+      return {
+        cusip,
+        issuer: isCallable ? 'Example Bank N.A.' : 'Sample Financial Corp.',
+        underliers: isCallable
+          ? {
+              description: 'Worst-of basket',
+              detail: 'SPY / QQQ / EFA (equal weight)'
+            }
+          : {
+              description: 'Single underlier',
+              detail: 'SPDR® S&P 500® ETF Trust (SPY)'
+            },
+        initialValues: isCallable
+          ? 'SPY: 480.10 · QQQ: 400.25 · EFA: 80.40'
+          : 'SPY: 477.25',
+        payoutProfile: isCallable
+          ? 'Autocallable with contingent coupons; worst-of barrier at 70% of initial.'
+          : 'Point-to-point note on SPY; buffer of 15% on the downside.',
+        initialEstValue: isCallable ? '97.20% of face' : '98.10% of face',
+        totalFees: isCallable ? '2.80% (upfront + ongoing)' : '1.90% (upfront)',
+        finalObs: isCallable ? 'Jan 12, 2029' : 'Dec 15, 2027',
+        type: isCallable ? 'callable' : 'point'
+      };
+    }
+
+    const state = {
+      notes: [] // array of mock note objects
+    };
+
+    function renderTable() {
+      const filter = typeFilter.value;
+      let visible = state.notes;
+
+      if (filter === 'point') {
+        visible = visible.filter(n => n.type === 'point');
+      } else if (filter === 'callable') {
+        visible = visible.filter(n => n.type === 'callable');
+      }
+
+      notesBody.innerHTML = '';
+
+      if (!visible.length) {
+        notesBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="no-data">
+              No notes match the current filter.
+            </td>
+          </tr>
+        `;
+        countLabel.textContent = state.notes.length
+          ? 'All rows filtered out. Adjust filters to see notes.'
+          : 'No CUSIPs added yet.';
+        return;
+      }
+
+      visible.forEach(note => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${note.cusip}</td>
+          <td>
+            <div class="issuer-cell">${note.issuer}</div>
+          </td>
+          <td>
+            <div>${note.underliers.description}</div>
+            <div class="cell-muted">${note.underliers.detail}</div>
+          </td>
+          <td>${note.initialValues}</td>
+          <td>${note.payoutProfile}</td>
+          <td>${note.initialEstValue}</td>
+          <td>${note.totalFees}</td>
+          <td>${note.finalObs}</td>
+          <td>
+            <span class="tag ${note.type === 'point' ? 'type-point' : 'type-callable'}">
+              ${note.type === 'point' ? 'Point-to-point' : 'Callable'}
+            </span>
+          </td>
+        `;
+        notesBody.appendChild(tr);
+      });
+
+      const total = state.notes.length;
+      const shown = visible.length;
+      countLabel.textContent =
+        shown === total
+          ? `${shown} note${shown === 1 ? '' : 's'} in view.`
+          : `${shown} of ${total} note${total === 1 ? '' : 's'} in view.`;
+    }
+
+    addBtn.addEventListener('click', () => {
+      const input = cusipInput.value;
+      if (!input.trim()) return;
+
+      const parts = input.split(',');
+      parts.forEach(p => {
+        const note = getMockNoteForCusip(p);
+        if (!note) return;
+        // avoid duplicates by CUSIP
+        if (!state.notes.find(n => n.cusip === note.cusip)) {
+          state.notes.push(note);
+        }
+      });
+
+      renderTable();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      state.notes = [];
+      renderTable();
+    });
+
+    typeFilter.addEventListener('change', renderTable);
+
+    cusipInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addBtn.click();
+    });
+
+    renderTable();
+  </script>
+</body>
+</html>

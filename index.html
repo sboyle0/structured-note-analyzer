@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Structured Note Insight | Landing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg-main: #0b4f3c;          /* deep advisory green */
+      --bg-main-soft: #0f5f48;
+      --text-main: #ffffff;
+      --text-muted: rgba(255,255,255,0.75);
+      --text-soft: rgba(255,255,255,0.6);
+      --accent: #9be6c4;
+      --accent-soft: rgba(155,230,196,0.14);
+      --border-soft: rgba(255,255,255,0.18);
+      --border-strong: rgba(255,255,255,0.32);
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      background: var(--bg-main);
+      color: var(--text-main);
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* -------- NAV -------- */
+
+    .nav {
+      border-bottom: 1px solid var(--border-soft);
+      backdrop-filter: blur(6px);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 0;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: linear-gradient(145deg, var(--bg-main-soft), #128162);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .brand-text h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .brand-text p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 4px 0;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-main);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn.secondary {
+      border-color: var(--border-strong);
+      background: rgba(1,33,22,0.2);
+    }
+
+    .btn.secondary:hover {
+      background: rgba(1,33,22,0.35);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #063322;
+      border-color: rgba(7,52,36,0.2);
+    }
+
+    .btn.primary:hover {
+      background: #b7f0d4;
+    }
+
+    @media (max-width: 768px) {
+      .nav-inner {
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .nav-links {
+        display: none; /* keep nav simple for now on mobile */
+      }
+    }
+
+    /* -------- MAIN SECTIONS -------- */
+
+    main {
+      flex: 1;
+    }
+
+    .section {
+      padding: 56px 0;
+    }
+
+    .section + .section {
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+
+    @media (min-width: 960px) {
+      .section {
+        padding: 72px 0;
+      }
+    }
+
+    .section-header {
+      margin-bottom: 24px;
+    }
+
+    .section-kicker {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+
+    .section-intro {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 600px;
+    }
+
+    /* -------- HERO -------- */
+
+    .hero {
+      padding-top: 56px;
+      padding-bottom: 40px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 40px;
+      align-items: center;
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 32px;
+      }
+    }
+
+    .hero-title {
+      font-size: 30px;
+      line-height: 1.2;
+      margin: 0 0 12px;
+      max-width: 560px;
+    }
+
+    .hero-text {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin-bottom: 18px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .hero-note {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .hero-card {
+      border-radius: 14px;
+      border: 1px solid var(--border-soft);
+      background: rgba(1,33,22,0.35);
+      padding: 18px 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .hero-card h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    .hero-card p {
+      margin: 0;
+    }
+
+    /* -------- ABOUT / STEVE -------- */
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 32px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 900px) {
+      .about-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .bio-block {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .bio-block p {
+      margin: 0 0 10px;
+    }
+
+    .advisor-card {
+      display: flex;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border-soft);
+      background: rgba(1,33,22,0.35);
+      align-items: center;
+    }
+
+    .advisor-photo {
+      width: 64px;
+      height: 64px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.3);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .advisor-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .advisor-meta h3 {
+      margin: 0 0 2px;
+      font-size: 15px;
+    }
+
+    .advisor-meta p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .advisor-links {
+      margin-top: 6px;
+      font-size: 12px;
+    }
+
+    .advisor-links a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .advisor-links a:hover {
+      text-decoration: underline;
+    }
+
+    /* -------- CONTACT -------- */
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 32px;
+    }
+
+    @media (max-width: 900px) {
+      .contact-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .contact-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .field-full {
+      grid-column: 1 / -1;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: var(--text-main);
+    }
+
+    .input-light,
+    .textarea-light {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
+      background: rgba(1,33,22,0.2);
+      color: var(--text-main);
+      padding: 7px 10px;
+      font-size: 13px;
+      outline: none;
+      resize: vertical;
+    }
+
+    .input-light::placeholder,
+    .textarea-light::placeholder {
+      color: var(--text-soft);
+    }
+
+    .input-light:focus,
+    .textarea-light:focus {
+      border-color: var(--accent);
+      background: rgba(1,33,22,0.35);
+    }
+
+    .textarea-light {
+      min-height: 80px;
+    }
+
+    .contact-note {
+      font-size: 12px;
+      color: var(--text-soft);
+      margin-top: 10px;
+    }
+
+    .contact-card {
+      border-radius: 14px;
+      border: 1px solid var(--border-soft);
+      background: rgba(1,33,22,0.35);
+      padding: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .contact-card h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    /* -------- TRANSPARENCY SLIDER -------- */
+
+    .transparency-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .slider-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .slider-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      background: rgba(1,33,22,0.3);
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .slider-btn:hover {
+      background: rgba(1,33,22,0.5);
+    }
+
+    .slider-indicator {
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .transparency-card {
+      border-radius: 14px;
+      border: 1px solid var(--border-soft);
+      background: rgba(1,33,22,0.35);
+      padding: 18px 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .transparency-title {
+      margin: 0 0 6px;
+      font-size: 15px;
+      color: var(--text-main);
+    }
+
+    .transparency-body p {
+      margin: 0 0 6px;
+    }
+
+    .transparency-body ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .transparency-body li {
+      margin-bottom: 4px;
+    }
+
+    /* -------- FOOTER -------- */
+
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.12);
+      padding: 16px 0 20px;
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    footer .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    footer a {
+      color: var(--text-soft);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- NAV -->
+    <nav class="nav">
+      <div class="container nav-inner">
+        <div class="brand">
+          <div class="brand-mark">SN</div>
+          <div class="brand-text">
+            <h1>Structured Note Insight</h1>
+            <p>Clear terms. Better decisions.</p>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <a href="#about" class="nav-link">About</a>
+          <a href="#contact" class="nav-link">Contact</a>
+          <a href="#transparency" class="nav-link">Transparency</a>
+          <!-- This will eventually link to your login page -->
+          <a href="login.html" class="btn secondary">Advisor login</a>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <!-- HERO -->
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <h2 class="hero-title">
+              Structured note transparency designed for advisors and their clients.
+            </h2>
+            <p class="hero-text">
+              Enter a CUSIP, surface the key terms, and understand how today’s market
+              levels translate to potential outcomes at maturity or call dates.
+              Built to support clear conversations and documentation.
+            </p>
+            <div class="hero-actions">
+              <a href="login.html" class="btn primary">Access the analysis tool</a>
+              <a href="#contact" class="btn secondary">Schedule a walkthrough</a>
+            </div>
+            <div class="hero-note">
+              Secure, read-only analytics. You retain full control of your client relationships.
+            </div>
+          </div>
+          <div>
+            <div class="hero-card">
+              <h3>High-level workflow</h3>
+              <p>
+                1. Enter one or more CUSIPs.<br />
+                2. The platform retrieves final terms from public filings.<br />
+                3. Key note features and a high-level “mature today” view are presented
+                in a simple, comparable grid for advisors.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT / STEVE -->
+      <section id="about" class="section">
+        <div class="container">
+          <div class="section-header">
+            <div class="section-kicker">About us</div>
+            <h2 class="section-title">Led by structured note experience</h2>
+            <p class="section-intro">
+              Structured Note Insight is built around a simple idea:
+              advisors and investors should be able to quickly see how a note works,
+              what it costs, and what today’s markets mean for expected outcomes.
+            </p>
+          </div>
+
+          <div class="about-grid">
+            <div class="bio-block">
+              <p>
+                Steve Boyle has worked across capital markets, structured products,
+                and advisor support, helping financial professionals translate complex
+                terms into practical guidance for clients. His background spans
+                product design, due diligence, and portfolio construction, with a
+                focus on communication that stands up in both client meetings and
+                compliance reviews.
+              </p>
+              <p>
+                Structured Note Insight grew out of that experience: a desire to take
+                the information that already exists in pricing supplements, investor
+                disclosures, and market data, and present it in a way that makes it
+                easier to compare notes, document recommendations, and monitor holdings
+                over time.
+              </p>
+              <p>
+                The platform is not a recommendation engine and does not replace
+                firm-approved research. Instead, it aims to be a clear lens into what
+                a note is actually doing and how that lines up with the expectations
+                set when it was purchased.
+              </p>
+            </div>
+
+            <div class="advisor-card">
+              <div class="advisor-photo">
+                <!-- Replace src with a hosted image of Steve when available -->
+                <img src="https://via.placeholder.com/128x128.png?text=SB" alt="Photo of Steve Boyle" />
+              </div>
+              <div class="advisor-meta">
+                <h3>Steve Boyle</h3>
+                <p>Founder, Structured Note Insight</p>
+                <div class="advisor-links">
+                  <a href="https://www.linkedin.com/in/--steve-boyle/" target="_blank" rel="noopener">
+                    View LinkedIn profile
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRANSPARENCY SLIDER -->
+      <section id="transparency" class="section">
+        <div class="container">
+          <div class="transparency-header">
+            <div>
+              <div class="section-kicker">Why transparency matters</div>
+              <h2 class="section-title" style="margin-bottom: 4px;">Transparency around note terms and performance</h2>
+              <p class="section-intro">
+                Clear, comparable information helps advisors set expectations, manage reviews,
+                and support better conversations with note holders.
+              </p>
+            </div>
+            <div class="slider-controls">
+              <button class="slider-btn" id="transparency-prev" aria-label="Previous reason">
+                ‹
+              </button>
+              <span class="slider-indicator" id="transparency-indicator">1 / 3</span>
+              <button class="slider-btn" id="transparency-next" aria-label="Next reason">
+                ›
+              </button>
+            </div>
+          </div>
+
+          <div class="transparency-card">
+            <h3 class="transparency-title" id="transparency-title"></h3>
+            <div class="transparency-body" id="transparency-body"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTACT -->
+      <section id="contact" class="section">
+        <div class="container">
+          <div class="section-header">
+            <div class="section-kicker">Contact us</div>
+            <h2 class="section-title">Explore how this fits your practice</h2>
+            <p class="section-intro">
+              Share a bit about your firm and how you use structured notes today.
+              We’ll follow up with a brief overview and next steps.
+            </p>
+          </div>
+
+          <div class="contact-grid">
+            <div>
+              <form class="contact-form">
+                <div class="field">
+                  <label for="name">Name</label>
+                  <input id="name" class="input-light" type="text" placeholder="First and last name" />
+                </div>
+                <div class="field">
+                  <label for="firm">Firm</label>
+                  <input id="firm" class="input-light" type="text" placeholder="Broker-dealer or RIA" />
+                </div>
+                <div class="field field-full">
+                  <label for="email">Email address</label>
+                  <input id="email" class="input-light" type="email" placeholder="you@firm.com" />
+                </div>
+                <div class="field field-full">
+                  <label for="message">Message</label>
+                  <textarea id="message" class="textarea-light" placeholder="How are you using structured notes today, and what would you like to be able to see more clearly?"></textarea>
+                </div>
+                <div class="field field-full">
+                  <button type="button" class="btn primary">Submit inquiry</button>
+                </div>
+              </form>
+              <div class="contact-note">
+                This form is a visual placeholder. In production, submissions would be sent
+                securely to your preferred CRM or inbox.
+              </div>
+            </div>
+
+            <div class="contact-card">
+              <h3>How advisors tend to use this</h3>
+              <p>
+                • Reviewing existing structured note holdings in client accounts.<br />
+                • Comparing new issue terms across issuers and payoff profiles.<br />
+                • Documenting the rationale for recommendations in client files.<br />
+                • Preparing for annual or periodic review conversations with note holders.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container footer-inner">
+        <div>© <span id="year"></span> Structured Note Insight. For informational use by financial professionals.</div>
+        <div>
+          <a href="#about">About</a> ·
+          <a href="#contact">Contact</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Transparency slider content
+    const transparencySlides = [
+      {
+        title: 'Clearer expectations for clients',
+        body: `
+          <p>
+            Structured notes can combine income, downside exposure, and path-dependent payoffs.
+            Summarising those features in plain language helps clients understand what “good”
+            and “bad” outcomes might look like before they occur.
+          </p>
+          <ul>
+            <li>Align the note’s payoff profile with the client’s risk tolerance.</li>
+            <li>Explain barriers, buffers, and calls in simple terms.</li>
+            <li>Reduce surprises when markets move sharply.</li>
+          </ul>
+        `
+      },
+      {
+        title: 'Better oversight for advisors and firms',
+        body: `
+          <p>
+            A consistent, high-level view across CUSIPs makes it easier to monitor
+            concentrations, compare alternatives, and evidence that recommendations
+            were made with a clear understanding of note mechanics.
+          </p>
+          <ul>
+            <li>Review key terms and fees across issuers and deals.</li>
+            <li>Track which notes are nearing call or maturity dates.</li>
+            <li>Support supervisory and compliance review with concise summaries.</li>
+          </ul>
+        `
+      },
+      {
+        title: 'Ongoing context as markets change',
+        body: `
+          <p>
+            Notes are purchased at one point in time, but their risk/return profile
+            can change as underliers move. Tying disclosure terms to live market data
+            gives advisors an updated view of where each note stands today.
+          </p>
+          <ul>
+            <li>Show how current underlier levels compare to initial and barrier levels.</li>
+            <li>Highlight scenarios where capital is at greater risk.</li>
+            <li>Inform review conversations and potential repositioning.</li>
+          </ul>
+        `
+      }
+    ];
+
+    let currentSlide = 0;
+    const titleEl = document.getElementById('transparency-title');
+    const bodyEl = document.getElementById('transparency-body');
+    const indicatorEl = document.getElementById('transparency-indicator');
+
+    function renderTransparencySlide() {
+      const slide = transparencySlides[currentSlide];
+      titleEl.textContent = slide.title;
+      bodyEl.innerHTML = slide.body;
+      indicatorEl.textContent = (currentSlide + 1) + ' / ' + transparencySlides.length;
+    }
+
+    document.getElementById('transparency-prev').addEventListener('click', () => {
+      currentSlide = (currentSlide - 1 + transparencySlides.length) % transparencySlides.length;
+      renderTransparencySlide();
+    });
+
+    document.getElementById('transparency-next').addEventListener('click', () => {
+      currentSlide = (currentSlide + 1) % transparencySlides.length;
+      renderTransparencySlide();
+    });
+
+    // Initialize first slide
+    renderTransparencySlide();
+  </script>
+</body>
+</html>
