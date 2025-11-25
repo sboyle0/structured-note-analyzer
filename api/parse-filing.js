@@ -2,136 +2,60 @@ export default async function handler(req, res) {
   try {
     const { cusip, accessionNo, cik } = req.query;
 
-    if (!accessionNo || !cik) {
+    if (!cusip || !accessionNo || !cik) {
       return res.status(400).json({
         message:
-          "accessionNo and cik are required, e.g. ?cusip=48136H7D4&accessionNo=0001213900-25-104551&cik=19617"
+          "Missing required query params. Example: ?cusip=48136H7D4&accessionNo=0001213900-25-104551&cik=19617"
       });
     }
 
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (!openaiKey) {
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
       return res.status(500).json({
         message: "OPENAI_API_KEY environment variable is not set in Vercel."
       });
     }
 
-    // --- 1) Figure out where the HTML file lives on sec.gov ---
+    // --- 1) Get HTML preview from our own /api/filing-html endpoint ---
 
-    // CIK in the path is just digits, no leading zeros needed
-    const cikNormalized = String(cik).replace(/^0+/, "");
-    // Accession number folder has the dashes removed
-    const folderAccession = accessionNo.replace(/-/g, "");
+    const baseUrl =
+      process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000";
 
-    // Every filing folder on sec.gov has an index.json we can inspect
-    const indexUrl = `https://www.sec.gov/Archives/edgar/data/${cikNormalized}/${folderAccession}/index.json`;
+    const filingUrl = `${baseUrl}/api/filing-html?accessionNo=${encodeURIComponent(
+      accessionNo
+    )}&cik=${encodeURIComponent(cik)}`;
 
-    const indexResp = await fetch(indexUrl, {
-      headers: {
-        // Being a good citizen with SEC – they like a UA string
-        "User-Agent":
-          "structured-note-analyzer/1.0 (contact: your-email@example.com)",
-        Accept: "application/json"
-      }
-    });
+    const filingRes = await fetch(filingUrl);
+    const filingJson = await filingRes.json();
 
-    const indexText = await indexResp.text();
-
-    if (!indexResp.ok) {
-      return res.status(indexResp.status).json({
-        message: "Could not fetch index.json from sec.gov",
-        status: indexResp.status,
-        body: indexText,
-        indexUrl
+    if (!filingRes.ok) {
+      return res.status(filingRes.status).json({
+        message: "Error fetching filing HTML via /api/filing-html",
+        filingUrl,
+        filingJson
       });
     }
 
-    let indexJson;
-    try {
-      indexJson = JSON.parse(indexText);
-    } catch (e) {
+    const htmlPreview = filingJson.htmlPreview;
+    if (!htmlPreview) {
       return res.status(500).json({
-        message: "Could not parse index.json from sec.gov",
-        raw: indexText,
-        indexUrl
+        message: "filing-html did not return htmlPreview.",
+        filingJson
       });
     }
 
-    const items =
-      indexJson &&
-      indexJson.directory &&
-      Array.isArray(indexJson.directory.item)
-        ? indexJson.directory.item
-        : [];
-
-    // Choose an .htm file – usually the main pricing supplement
-    const htmlItem =
-      items.find(
-        (it) =>
-          typeof it.name === "string" &&
-          it.name.toLowerCase().endsWith(".htm")
-      ) || null;
-
-    if (!htmlItem) {
-      return res.status(404).json({
-        message: "Could not find an .htm file for this filing in index.json.",
-        indexUrl,
-        items: items.map((it) => it.name)
-      });
-    }
-
-    const htmlFileName = htmlItem.name;
-    const htmlUrl = `https://www.sec.gov/Archives/edgar/data/${cikNormalized}/${folderAccession}/${htmlFileName}`;
-
-    // --- 2) Fetch the actual HTML pricing supplement ---
-
-    const htmlResp = await fetch(htmlUrl, {
-      headers: {
-        "User-Agent":
-          "structured-note-analyzer/1.0 (contact: your-email@example.com)",
-        Accept: "text/html,application/xhtml+xml"
-      }
-    });
-
-    const html = await htmlResp.text();
-
-    if (!htmlResp.ok) {
-      return res.status(htmlResp.status).json({
-        message: "Could not fetch filing HTML from sec.gov",
-        status: htmlResp.status,
-        body: html,
-        htmlUrl
-      });
-    }
-
-    // --- 3) Strip HTML tags to get plain text for the model ---
-
-    const withoutScripts = html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ");
-
-    const plainText = withoutScripts
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    // Keep it to a reasonable size for the model (can adjust as needed)
-    const maxChars = 20000;
-    const snippet = plainText.slice(0, maxChars);
-
-    // --- 4) Ask OpenAI to extract the key terms into a JSON object ---
+    // --- 2) Call OpenAI to extract structured note terms ---
 
     const systemPrompt = `
-You are a structured note analyst. You read pricing supplements and extract key terms
-into a clean JSON object. The JSON will be used to populate a UI for financial advisors.
+You are a structured note prospectus parser.
+You receive HTML from a pricing supplement (SEC 424B2 / FWP) and must extract key trade terms.
 
-Return ONLY valid JSON. Do not include backticks or any explanation.
-If a field is not clearly available, set it to null and do not guess wildly.
-    `.trim();
+Always return a SINGLE JSON object ONLY, with NO surrounding text and NO markdown code fences.
+If something is missing or not clearly stated, use null for that field.
 
-    // This schema is designed to match your existing UI fields in app.html
-    const schemaDescription = `
-You must return a single JSON object with this exact shape:
+The JSON MUST have exactly this shape:
 
 {
   "issuer": string | null,
@@ -164,102 +88,100 @@ You must return a single JSON object with this exact shape:
     "amount_per_1000": number | null,
     "pct_of_par": number | null,
     "status": string,
-    "status_variant": "upside" | "downside" | "neutral",
+    "status_variant": string,
     "explanation": string,
     "subtitle": string
   }
 }
 
-Rules:
-- "profile_key" should be a short machine-friendly label, e.g.
-  "autocallable_single_underlier_barrier" or "point_to_point_single_underlier".
-- For "underliers", include one entry per underlier.
-- "initial_level" should be the official initial level on the trade/pricing date, if available.
-- For now, do NOT try to compute actual payoff_today numbers. Set the numeric fields to null,
-  set "status" to "Not yet calculated", "status_variant" to "neutral", and explain that only
-  terms have been parsed, not payoff logic.
-    `.trim();
+Do NOT include any markdown, backticks, or commentary – only valid JSON.
+`;
 
     const userPrompt = `
-CUSIP (if known): ${cusip || "unknown"}
+Here is a fragment of the pricing supplement HTML from sec.gov.
 
-Below is text extracted from a structured note pricing supplement. Extract the fields
-according to the schema described. Again: return ONLY JSON, no commentary.
+CUSIP: ${cusip}
+CIK: ${cik}
+Accession No: ${accessionNo}
 
----
-${snippet}
-    `.trim();
+HTML (truncated):
+${htmlPreview.slice(0, 12000)}
+`;
 
-    const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiKey}`
+        Authorization: `Bearer ${openaiApiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4o",
-        temperature: 0,
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "system", content: schemaDescription },
           { role: "user", content: userPrompt }
         ]
       })
     });
 
-    const openaiRaw = await openaiResp.text();
+    const openaiRawText = await openaiRes.text();
 
-    if (!openaiResp.ok) {
-      return res.status(openaiResp.status).json({
+    if (!openaiRes.ok) {
+      return res.status(openaiRes.status).json({
         message: "OpenAI API returned a non-OK status",
-        status: openaiResp.status,
-        body: openaiRaw
+        status: openaiRes.status,
+        body: openaiRawText
       });
     }
 
     let openaiData;
     try {
-      openaiData = JSON.parse(openaiRaw);
+      openaiData = JSON.parse(openaiRawText);
     } catch (e) {
       return res.status(500).json({
-        message: "Could not parse JSON from OpenAI chat completion response",
-        raw: openaiRaw
+        message: "Could not parse JSON from OpenAI response",
+        raw: openaiRawText
       });
     }
 
-    const content =
-      openaiData &&
-      openaiData.choices &&
-      openaiData.choices[0] &&
-      openaiData.choices[0].message &&
-      openaiData.choices[0].message.content;
-
-    if (!content) {
+    const content = openaiData?.choices?.[0]?.message?.content;
+    if (!content || typeof content !== "string") {
       return res.status(500).json({
-        message: "OpenAI response did not contain choices[0].message.content",
+        message: "OpenAI response did not contain message.content as a string",
         openaiData
       });
     }
 
+    // --- 3) Make sure we have clean JSON (strip code fences if any still appear) ---
+
+    let jsonText = content.trim();
+
+    if (jsonText.startsWith("```")) {
+      // Remove leading ``` or ```json and trailing ```
+      jsonText = jsonText
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/```$/, "")
+        .trim();
+    }
+
     let note;
     try {
-      note = JSON.parse(content);
+      note = JSON.parse(jsonText);
     } catch (e) {
       return res.status(500).json({
-        message:
-          "Assistant did not return valid JSON in message.content. Check the prompt.",
+        message: "Assistant did not return valid JSON in message.content. Check the prompt.",
         assistantContent: content
       });
     }
 
-    // --- 5) Respond with structured note data ---
+    // --- 4) Return structured note terms ---
 
     return res.status(200).json({
-      source: "sec.gov + openai",
-      cusip: cusip || null,
+      source: "sec.gov + OpenAI",
+      cusip,
       accessionNo,
-      cik: cikNormalized,
-      htmlUrl,
+      cik,
+      htmlPreviewLength: htmlPreview.length,
       note
     });
   } catch (err) {
@@ -270,3 +192,4 @@ ${snippet}
     });
   }
 }
+
