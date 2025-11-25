@@ -1,8 +1,5 @@
 {
-  "name": "structured-note-analyzer",
-  "version": "1.0.0",
-  "private": true,
   "dependencies": {
-    "sec-api": "^1.0.7"
+    "sec-api": "^1.0.0"
   }
 }
