@@ -2,7 +2,7 @@
 //
 // Simple, defensive handler that:
 // - Calls sec-api.io full-text search over EDGAR
-// - Looks for 424B2 / FWP filings that mention the CUSIP
+// - Looks for most recent filing that matches that CUSIP
 // - Returns basic metadata + links
 // - Never assumes arrays exist before checking them
 
