@@ -1,4 +1,4 @@
-\const { SecAPI } = require("sec-api");
+const { SecAPI } = require("sec-api");
 
 const secApi = new SecAPI(process.env.SEC_API_KEY);
 
@@ -7,10 +7,10 @@ const secApi = new SecAPI(process.env.SEC_API_KEY);
 const issuerMap = {
   "48136H": "19617",     // JPMorgan Chase Financial Company LLC
   "48134K": "19617",     // More JPM prefixes
-  "46647P": "19617"      // Etc — you will add UBS, HSBC, MS, C, BAC later
+  "46647P": "19617"      // Etc — add UBS, HSBC, MS, C, BAC later
 };
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
     const cusip = req.query.cusip;
     if (!cusip) return res.status(400).json({ error: "CUSIP missing" });
@@ -82,4 +82,4 @@ export default async function handler(req, res) {
       error: err.toString()
     });
   }
-}
+};
