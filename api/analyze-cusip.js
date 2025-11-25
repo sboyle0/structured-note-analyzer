@@ -130,7 +130,7 @@ async function fetchEdgarHtml(cikRaw, accessionNo) {
 
   // IMPORTANT: set a proper User-Agent per SEC guidelines
   const headers = {
-    "User-Agent": "Structured Note Analyzer (contact: your-email@example.com)",
+    "User-Agent": "Structured Note Analyzer (contact: steve.boyle11@gmail.com)",
     Accept: "application/json"
   };
 
@@ -175,7 +175,7 @@ async function fetchEdgarHtml(cikRaw, accessionNo) {
 
   const htmlRes = await fetch(htmlUrl, {
     headers: {
-      "User-Agent": "Structured Note Analyzer (contact: your-email@example.com)",
+      "User-Agent": "Structured Note Analyzer (contact: steve.boyle11@gmail.com)",
       Accept: "text/html"
     }
   });
