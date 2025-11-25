@@ -1,11 +1,7 @@
 {
   "name": "structured-note-analyzer",
   "version": "1.0.0",
-  "description": "Backend API for structured note analyzer",
-  "main": "api/analyze-cusip.js",
-  "scripts": {
-    "start": "node api/analyze-cusip.js"
-  },
+  "private": true,
   "dependencies": {
     "sec-api": "^1.0.7"
   }
