@@ -1,150 +1,228 @@
 // api/analyze-cusip.js
+import OpenAI from "openai";
 
+const SEC_API_KEY = process.env.SEC_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// Helper: basic JSON response
+function sendJson(res, statusCode, data) {
+  res.status(statusCode).setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(data));
+}
+
+// Helper: call sec-api search to find the most recent final terms for a CUSIP
+async function findFilingForCusip(cusip) {
+  const body = {
+    query: {
+      query_string: {
+        // You can refine this query later if needed
+        query: `cusip:"${cusip}" AND (formType:"424B2" OR formType:"FWP" OR formType:"424B5")`
+      }
+    },
+    from: 0,
+    size: 1,
+    sort: [{ filedAt: { order: "desc" } }]
+  };
+
+  const resp = await fetch("https://api.sec-api.io/search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: SEC_API_KEY
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!resp.ok) {
+    throw new Error(`sec-api search error: ${resp.status}`);
+  }
+
+  const json = await resp.json();
+  const hit = json.filings && json.filings[0];
+
+  if (!hit) {
+    return null;
+  }
+
+  return {
+    accessionNo: hit.accessionNo,
+    formType: hit.formType,
+    filedAt: hit.filedAt,
+    companyName: hit.companyName,
+    cik: hit.cik
+  };
+}
+
+// Helper: fetch the full text of a filing
+async function fetchFilingText(accessionNo) {
+  // This uses sec-api's filing-text endpoint. If sec-api changes this,
+  // adjust the URL accordingly based on their docs.
+  const url = `https://api.sec-api.io/filing-text?accession-no=${encodeURIComponent(
+    accessionNo
+  )}`;
+
+  const resp = await fetch(url, {
+    headers: {
+      Authorization: SEC_API_KEY
+    }
+  });
+
+  if (!resp.ok) {
+    throw new Error(`sec-api filing-text error: ${resp.status}`);
+  }
+
+  const text = await resp.text();
+
+  // Optional: truncate if extremely long to keep token usage reasonable
+  const MAX_CHARS = 20000;
+  return text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text;
+}
+
+// Helper: ask OpenAI to extract structured note terms
+async function extractNoteTermsFromText(filingText) {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not set");
+  }
+
+  const client = new OpenAI({ apiKey: OPENAI_API_KEY });
+
+  const systemPrompt = `
+You are a specialist in US structured products.
+You will receive the text of a FINAL PRICING SUPPLEMENT or FREE WRITING PROSPECTUS for a structured note.
+
+Your job is to return a STRICT JSON object describing the note terms, with NO extra commentary.
+If a value is not clearly stated, use null.
+
+The JSON schema MUST be:
+
+{
+  "issuer": string | null,
+  "issuer_sub": string | null,
+  "trade_date": string | null,            // free-text date, e.g. "January 12, 2024"
+  "maturity_date": string | null,
+  "product_type": string | null,          // e.g. "Autocallable Contingent Income Note"
+  "profile_key": string | null,           // short classification key, e.g. "autocallable_single_underlier_barrier"
+  "coupon": {
+    "label": string | null,               // short label, e.g. "8.50% p.a. contingent, quarterly"
+    "structure": string | null,          // plain English summary of coupon mechanics (1–3 sentences)
+    "barrier": string | null             // how coupon barrier works (level, % of initial, etc.)
+  },
+  "protection": {
+    "label": string | null,              // e.g. "70% European barrier"
+    "principal": string | null,          // plain English principal protection description
+    "downside": string | null            // what happens if barrier is breached
+  },
+  "underliers": [
+    {
+      "name": string | null,
+      "ticker": string | null,
+      "role": string | null,             // e.g. "Sole underlier", "Worst-of underlier", etc.
+      "initial_level": number | null
+    }
+  ],
+  "payoff_today": {
+    "amount_per_1000": number | null,    // leave null for now, do NOT invent
+    "pct_of_par": number | null,        // leave null for now
+    "status": string,                    // e.g. "Not yet calculated"
+    "status_variant": "upside" | "downside",
+    "explanation": string,               // short explanation that payoff logic is not calculated yet
+    "subtitle": string                   // e.g. "Phase 1 – only filing lookup is live."
+  }
+}
+
+Important:
+- Return ONLY JSON, no markdown, no explanation.
+- Use short, advisor-friendly language.
+- Underliers: if there is a basket or worst-of, reflect that in the "role" field.
+- Do not try to calculate any payoff numbers for "payoff_today"; those are out of scope for this step.
+`;
+
+  const userPrompt = `
+Here is the text of a US structured note final pricing supplement or related document.
+Extract the note terms according to the schema.
+
+Document text:
+"""${filingText}"""
+`;
+
+  const completion = await client.chat.completions.create({
+    model: "gpt-4.1", // or "gpt-4o" / whatever model you prefer
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ]
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error("No content returned from OpenAI");
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch (e) {
+    throw new Error("Failed to parse JSON from OpenAI");
+  }
+
+  // Ensure there's at least a minimal payoff_today block
+  if (!parsed.payoff_today) {
+    parsed.payoff_today = {
+      amount_per_1000: null,
+      pct_of_par: null,
+      status: "Not yet calculated",
+      status_variant: "upside",
+      explanation:
+        "Payoff values are not calculated in this phase. Only note terms are extracted from the filing.",
+      subtitle: "Phase 1 – payoff calculation not implemented yet."
+    };
+  }
+
+  return parsed;
+}
+
+// Vercel / Next.js API handler
 export default async function handler(req, res) {
   try {
     const { cusip } = req.query;
 
     if (!cusip) {
-      return res.status(400).json({ error: "Missing 'cusip' query parameter" });
+      return sendJson(res, 400, { error: "Missing 'cusip' query parameter" });
     }
 
-    const secApiKey = process.env.SEC_API_KEY;
-    if (!secApiKey) {
-      return res.status(500).json({ error: "SEC_API_KEY is not set on the server" });
+    if (!SEC_API_KEY) {
+      return sendJson(res, 500, { error: "SEC_API_KEY is not set" });
     }
 
-    // 1) Use SEC-API Full-Text Search to find the pricing supplement
-    // We filter for common structured note forms: 424B2, FWP, 424B3.
-    const fullTextBody = {
-      query: cusip,                // search by CUSIP string
-      formTypes: ["424B2", "FWP", "424B3"],
-      page: "1"
-    };
-
-    const ftResponse = await fetch("https://api.sec-api.io/full-text-search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // SEC-API docs: either Authorization header OR ?token=... param
-        // Here we use Authorization header:
-        //   Authorization: YOUR_API_KEY
-        "Authorization": secApiKey
-      },
-      body: JSON.stringify(fullTextBody)
-    });
-
-    if (!ftResponse.ok) {
-      const text = await ftResponse.text();
-      console.error("SEC-API full-text error:", ftResponse.status, text);
-      return res.status(502).json({
-        error: "SEC-API full-text search failed",
-        status: ftResponse.status
-      });
-    }
-
-    const ftData = await ftResponse.json();
-
-    // Note: full-text search response structure is similar to Query API:
-    // { filings: [ { accessionNo, formType, filedAt, linkToHtml, documentFormatFiles, ... }, ... ] }
-    // If this ever comes back undefined, log ftData in Vercel logs and adjust the field names.
-    const filing = ftData.filings && ftData.filings[0];
-
-    if (!filing) {
-      return res.status(404).json({
-        error: "No matching pricing supplement found for this CUSIP",
+    // 1) Find a relevant filing for this CUSIP
+    const filingMeta = await findFilingForCusip(cusip);
+    if (!filingMeta) {
+      return sendJson(res, 404, {
+        error: "No filing found for this CUSIP",
         cusip
       });
     }
 
-    // Try to grab the main HTML document URL from documentFormatFiles;
-    // fall back to linkToFilingDetails if needed.
-    let mainDocUrl = filing.linkToFilingDetails;
-    if (Array.isArray(filing.documentFormatFiles) && filing.documentFormatFiles.length > 0) {
-      const mainDoc =
-        filing.documentFormatFiles.find(f => f.type === filing.formType) ||
-        filing.documentFormatFiles[0];
-      if (mainDoc && mainDoc.documentUrl) {
-        mainDocUrl = mainDoc.documentUrl;
-      }
-    }
+    // 2) Get the full filing text from sec-api
+    const filingText = await fetchFilingText(filingMeta.accessionNo);
 
-    // 2) Download the filing HTML/text from SEC (via SEC-API Download API or directly)
-    // For now, we keep it simple and just fetch the HTML from sec.gov.
-    // Later, we’ll add a call to ChatGPT to parse this into your structured fields.
-    let rawText = null;
-    if (mainDocUrl && mainDocUrl.startsWith("https://www.sec.gov")) {
-      try {
-        const htmlResp = await fetch(mainDocUrl);
-        if (htmlResp.ok) {
-          const html = await htmlResp.text();
-          // Very naive "strip tags" – just so we have some plain text for the next phase.
-          rawText = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 10000);
-        }
-      } catch (err) {
-        console.error("Error fetching mainDocUrl:", err);
-      }
-    }
+    // 3) Ask OpenAI to extract the structured note terms
+    const noteTerms = await extractNoteTermsFromText(filingText);
 
-    // 3) PHASE 1 RESPONSE:
-    //    We return:
-    //      - basic filing metadata from SEC-API
-    //      - a "rawText" preview
-    //      - a placeholder "note" object in roughly your existing format
-    //
-    // In Phase 2, we’ll replace the placeholder with ChatGPT-parsed data
-    // based on rawText + your extraction rules.
-
-    const responsePayload = {
-      source: "sec-api.io",
+    // 4) Return combined response
+    return sendJson(res, 200, {
+      source: "sec-api.io + openai",
       cusip,
-      filingMeta: {
-        accessionNo: filing.accessionNo,
-        formType: filing.formType,
-        filedAt: filing.filedAt,
-        companyName: filing.companyName || filing.companyNameLong,
-        cik: filing.cik,
-        linkToHtml: filing.linkToHtml || mainDocUrl,
-        linkToFilingDetails: filing.linkToFilingDetails,
-      },
-      // Limited raw text (for debugging / future AI parsing)
-      rawTextPreview: rawText || null,
-
-      // Placeholder "note" object – this keeps your front-end from breaking for now.
-      // Once we add ChatGPT extraction, these fields will be populated from the filing text.
-      note: {
-        issuer: filing.companyName || "Issuer from filing",
-        issuer_sub: "Parsed issuer description will go here.",
-        trade_date: "To be parsed",
-        maturity_date: "To be parsed",
-        product_type: "To be parsed (e.g. Autocallable Contingent Income Note)",
-        profile_key: "To be parsed (e.g. autocallable_single_underlier_barrier)",
-        coupon: {
-          label: "To be parsed (e.g. 8.50% p.a. contingent quarterly coupon)",
-          structure: "To be parsed from document.",
-          barrier: "To be parsed from document."
-        },
-        protection: {
-          label: "To be parsed (e.g. 70% European barrier)",
-          principal: "To be parsed.",
-          downside: "To be parsed."
-        },
-        underliers: [
-          // To be replaced with extracted underliers; left empty for now
-        ],
-        payoff_today: {
-          amount_per_1000: null,
-          pct_of_par: null,
-          status: "Not yet calculated",
-          status_variant: "upside",
-          explanation: "Payoff logic not yet implemented for live data.",
-          subtitle: "Phase 1 – only filing lookup is live."
-        }
-      }
-    };
-
-    return res.status(200).json(responsePayload);
+      filingMeta,
+      note: noteTerms
+    });
   } catch (err) {
-    console.error("analyze-cusip error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error(err);
+    return sendJson(res, 500, {
+      error: "Internal error in analyze-cusip",
+      details: err.message || String(err)
+    });
   }
 }
+
