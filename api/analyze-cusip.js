@@ -24,18 +24,13 @@ export default async function handler(req, res) {
     }
 
     // Full-text search query: look for this CUSIP in 424B2 or FWP
-    const searchBody = {
-  query: {
-    query_string: {
+   const searchBody = {
       // Just search for this CUSIP anywhere in the filing text,
       // then we take the most recent hit.
-      query: `"${cusip}"`
-    }
-  },
-  from: 0,
-  size: 1, // only the latest filing
-  sort: [{ filedAt: { order: "desc" } }]
-};
+      query: `"${cusip}"`,
+      from: 0,
+      size: 1, // only the latest filing
+      sort: [{ filedAt: { order: "desc" } }]
 
     const response = await fetch("https://api.sec-api.io/full-text-search", {
       method: "POST",
