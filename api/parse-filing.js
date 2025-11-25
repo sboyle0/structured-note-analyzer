@@ -1,70 +1,112 @@
-// api/parse-filing.js
-
-// This route:
-// 1) Takes ?cusip, ?accessionNo, ?cik
-// 2) Calls /api/filing-html to get the HTML snippet from sec.gov
-// 3) Sends that HTML to OpenAI with instructions to return JSON
-// 4) Cleans off any ```json fences and returns the parsed JSON
-
 export default async function handler(req, res) {
   try {
-    const { cusip, accessionNo, cik } = req.query;
+    const { cusip, accessionNo, cik } = req.query || {};
 
     if (!cusip || !accessionNo || !cik) {
       return res.status(400).json({
-        message:
-          "Missing query parameters. Required: cusip, accessionNo, cik. Example: /api/parse-filing?cusip=48136H7D4&accessionNo=0001213900-25-104551&cik=19617"
+        message: "Missing required query params. Expected cusip, accessionNo, cik.",
+        received: { cusip, accessionNo, cik }
       });
     }
 
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (!openaiKey) {
+    const openAiKey = process.env.OPENAI_API_KEY;
+    if (!openAiKey) {
       return res.status(500).json({
         message: "OPENAI_API_KEY environment variable is not set in Vercel."
       });
     }
 
-    // --- 1) Get HTML snippet from our existing /api/filing-html route ----
-    // In production this is your Vercel domain. For local dev you can adjust.
-    const baseUrl =
-      process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "https://structured-note-analyzer.vercel.app";
+    // --- 1. Fetch main HTML filing from sec.gov directly ---
+    const cleanAccession = accessionNo.replace(/-/g, "");
+    const cleanCik = String(parseInt(cik, 10));
+    const basePath = `https://www.sec.gov/Archives/edgar/data/${cleanCik}/${cleanAccession}`;
 
-    const filingHtmlUrl = `${baseUrl}/api/filing-html?accessionNo=${encodeURIComponent(
-      accessionNo
-    )}&cik=${encodeURIComponent(cik)}`;
+    const ua = "StructuredNoteAnalyzer/1.0 (contact: your-email@example.com)";
 
-    const filingResp = await fetch(filingHtmlUrl);
+    // Get index.json for the filing directory to discover the main HTML file
+    const indexResp = await fetch(`${basePath}/index.json`, {
+      headers: {
+        "User-Agent": ua,
+        "Accept": "application/json"
+      }
+    });
 
-    if (!filingResp.ok) {
-      const raw = await filingResp.text();
+    if (!indexResp.ok) {
+      const body = await indexResp.text();
       return res.status(502).json({
-        message: "Error calling /api/filing-html",
-        status: filingResp.status,
-        body: raw
+        message: "Failed to fetch index.json from sec.gov",
+        status: indexResp.status,
+        body
       });
     }
 
-    const filingData = await filingResp.json();
-    const htmlPreview = filingData.htmlPreview;
-
-    if (!htmlPreview) {
+    let indexData;
+    try {
+      indexData = await indexResp.json();
+    } catch (e) {
       return res.status(500).json({
-        message:
-          "No htmlPreview returned from /api/filing-html. Cannot parse terms.",
-        filingData
+        message: "Could not parse index.json from sec.gov",
+        error: e.toString()
       });
     }
 
-    // --- 2) Call OpenAI to extract terms from HTML snippet -------------
+    // index.json usually has shape: { directory: { item: [ { name, type, ... }, ... ] } }
+    const items = indexData?.directory?.item;
+    let htmlFileName = null;
 
-    // Helper prompt text describing the JSON shape we want.
-    const schemaDescription = `
-You must return a SINGLE JSON object with the following shape:
+    if (Array.isArray(items)) {
+      const htmlFile = items.find(
+        (it) =>
+          typeof it.name === "string" &&
+          it.name.toLowerCase().endsWith(".htm")
+      );
+      if (htmlFile) {
+        htmlFileName = htmlFile.name;
+      }
+    }
+
+    if (!htmlFileName) {
+      return res.status(404).json({
+        message: "Could not identify main HTML file for this filing in index.json.",
+        basePath,
+        indexSample: indexData
+      });
+    }
+
+    const htmlUrl = `${basePath}/${htmlFileName}`;
+
+    const htmlResp = await fetch(htmlUrl, {
+      headers: {
+        "User-Agent": ua,
+        "Accept": "text/html,*/*"
+      }
+    });
+
+    const htmlText = await htmlResp.text();
+
+    if (!htmlResp.ok) {
+      return res.status(502).json({
+        message: "Failed to fetch filing HTML from sec.gov",
+        status: htmlResp.status,
+        bodyPreview: htmlText.slice(0, 500)
+      });
+    }
+
+    // Truncate HTML so we don't blow up the model context
+    const MAX_CHARS = 150000;
+    const htmlSnippet = htmlText.slice(0, MAX_CHARS);
+
+    // --- 2. Call OpenAI to parse core terms from the HTML ---
+    const systemPrompt = `
+You are an expert financial document parser focused on US structured notes.
+Your job is to read structured note final pricing supplements (424B2, FWP, etc.)
+and extract a concise, standardized summary in strict JSON form.
+
+Return ONLY a single JSON object, no explanations, no code fences, and no trailing text.
+The JSON must match this schema exactly:
 
 {
-  "issuer": string | null,
+  "issuer": string,
   "issuer_sub": string | null,
   "trade_date": string | null,
   "maturity_date": string | null,
@@ -86,155 +128,115 @@ You must return a SINGLE JSON object with the following shape:
       "ticker": string | null,
       "role": string | null,
       "initial_level": number | null,
-      "weighting": number | null,
+      "weighting": string | null,
       "worst_of_or_basket": string | null
     }
   ],
   "payoff_today": {
     "amount_per_1000": number | null,
     "pct_of_par": number | null,
-    "status": string | null,
-    "status_variant": string | null,
-    "explanation": string | null,
-    "subtitle": string | null
+    "status": string,
+    "status_variant": "upside" | "downside" | "neutral",
+    "explanation": string,
+    "subtitle": string
   }
 }
 
-Rules:
-- Use null if a field is not stated or cannot be determined.
-- Dates can be left as human-readable strings (e.g. "October 29, 2025").
-- "worst_of_or_basket" should be "worst_of", "basket", or null.
-- "status_variant" should be one of "upside", "downside", "neutral", or null.
-- DO NOT include any extra fields.
-- DO NOT include any comments.
-- DO NOT wrap the JSON in backticks or a code block.
-Return ONLY the JSON.
+If a field is not clearly stated in the document, set it to null.
+Make reasonable, conservative interpretations, but do NOT invent coupon rates,
+barrier levels, or dates that are not clearly present.
 `.trim();
 
-    const openaiResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini", // you can change this if you prefer another model
-          temperature: 0,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You extract structured terms from U.S. SEC structured note pricing supplements for financial advisors."
-            },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text:
-                    schemaDescription +
-                    `
+    const userPrompt = `
+Parse the following structured note pricing supplement HTML and extract terms
+according to the schema described.
 
-Context:
+Metadata:
 - CUSIP: ${cusip}
+- Accession No: ${accessionNo}
 - CIK: ${cik}
-- Accession number: ${accessionNo}
+- Filing HTML URL: ${htmlUrl}
 
-Here is an HTML snippet from the pricing supplement. Extract the note terms into the JSON shape above, following all rules.`
-                },
-                {
-                  type: "text",
-                  text: htmlPreview.slice(0, 6000) // avoid sending huge content
-                }
-              ]
-            }
-          ]
-        })
-      }
-    );
+Return ONLY a JSON object matching the schema. Do not wrap it in \`\`\` fences.
 
-    const rawOpenAI = await openaiResponse.text();
+----- BEGIN HTML SNIPPET -----
+${htmlSnippet}
+----- END HTML SNIPPET -----
+`.trim();
 
-    if (!openaiResponse.ok) {
-      // Surface the error from OpenAI so we can debug easily
-      return res.status(openaiResponse.status).json({
+    const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0,
+        max_tokens: 800
+      })
+    });
+
+    const aiRaw = await aiResp.text();
+
+    if (!aiResp.ok) {
+      return res.status(aiResp.status).json({
         message: "OpenAI API returned a non-OK status",
-        status: openaiResponse.status,
-        body: rawOpenAI
+        status: aiResp.status,
+        body: aiRaw
       });
     }
 
-    let openaiData;
+    let aiData;
     try {
-      openaiData = JSON.parse(rawOpenAI);
+      aiData = JSON.parse(aiRaw);
     } catch (e) {
       return res.status(500).json({
         message: "Could not parse JSON from OpenAI API response",
-        raw: rawOpenAI
+        raw: aiRaw
       });
     }
 
-    const assistantContent =
-      openaiData?.choices?.[0]?.message?.content || "";
-
-    if (!assistantContent) {
+    const assistantMessage = aiData?.choices?.[0]?.message?.content;
+    if (!assistantMessage) {
       return res.status(500).json({
-        message:
-          "OpenAI response did not contain message.content. Check model / prompt.",
-        openaiRaw: openaiData
+        message: "No message content returned from OpenAI.",
+        raw: aiData
       });
     }
 
-    // --- 3) Clean off ```json fences if the model ignored our instructions ---
+    let jsonText = assistantMessage.trim();
 
-    function extractJsonFromText(text) {
-      let trimmed = text.trim();
-
-      if (trimmed.startsWith("```")) {
-        // remove starting ``` or ```json
-        const firstNewline = trimmed.indexOf("\n");
-        if (firstNewline !== -1) {
-          trimmed = trimmed.substring(firstNewline + 1);
-        } else {
-          // whole thing is just ```...``` one line; strip leading fences
-          trimmed = trimmed.replace(/^```[a-zA-Z0-9]*\s*/g, "");
-        }
-
-        // remove trailing ```
-        const lastFence = trimmed.lastIndexOf("```");
-        if (lastFence !== -1) {
-          trimmed = trimmed.substring(0, lastFence);
-        }
+    // If the model still returned ```json ... ``` despite instructions, strip fences.
+    if (jsonText.startsWith("```")) {
+      const firstBrace = jsonText.indexOf("{");
+      const lastBrace = jsonText.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        jsonText = jsonText.slice(firstBrace, lastBrace + 1);
       }
-
-      return trimmed.trim();
     }
 
-    const cleaned = extractJsonFromText(assistantContent);
-
-    let parsed;
+    let note;
     try {
-      parsed = JSON.parse(cleaned);
+      note = JSON.parse(jsonText);
     } catch (e) {
       return res.status(500).json({
-        message:
-          "Assistant did not return valid JSON even after cleaning. See assistantContent and cleaned.",
-        assistantContent,
-        cleaned
+        message: "Assistant did not return valid JSON in message.content. Check the prompt.",
+        assistantContent: assistantMessage
       });
     }
 
-    // --- 4) Return the parsed JSON plus a bit of meta -------------------
-
     return res.status(200).json({
-      source: "sec.gov+openai",
+      source: "sec.gov + openai",
       cusip,
       accessionNo,
       cik,
-      htmlPreviewLength: htmlPreview.length,
-      terms: parsed
+      htmlUrl,
+      note
     });
   } catch (err) {
     console.error(err);
