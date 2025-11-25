@@ -1,11 +1,3 @@
-// api/analyze-cusip.js
-//
-// Simple, defensive handler that:
-// - Calls sec-api.io full-text search over EDGAR
-// - Looks for most recent filing that matches that CUSIP
-// - Returns basic metadata + links
-// - Never assumes arrays exist before checking them
-
 export default async function handler(req, res) {
   try {
     const { cusip } = req.query;
@@ -23,14 +15,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // Full-text search query: look for this CUSIP in 424B2 or FWP
-   const searchBody = {
-      // Just search for this CUSIP anywhere in the filing text,
-      // then we take the most recent hit.
+    // Full-text search query: look for this CUSIP anywhere in the filing text,
+    // then take the most recent hit.
+    const searchBody = {
       query: `"${cusip}"`,
       from: 0,
       size: 1, // only the latest filing
       sort: [{ filedAt: { order: "desc" } }]
+    };
 
     const response = await fetch("https://api.sec-api.io/full-text-search", {
       method: "POST",
@@ -75,7 +67,7 @@ export default async function handler(req, res) {
         filingsCount: 0,
         filingMeta: null,
         message:
-          "No 424B2 / FWP filings found for this CUSIP (full-text search).",
+          "No filings found for this CUSIP (full-text search).",
         raw: data
       });
     }
@@ -97,9 +89,7 @@ export default async function handler(req, res) {
       linkToHtml: filing.linkToHtml || null,
       linkToFilingDetails: filing.linkToFilingDetails || null,
       message:
-        "Found at least one filing containing this CUSIP via full-text search.",
-      // Optional: you can keep this around for debugging if you want
-      // raw: data
+        "Found at least one filing containing this CUSIP via full-text search."
     });
   } catch (err) {
     console.error(err);
