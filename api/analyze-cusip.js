@@ -1,157 +1,66 @@
 // api/analyze-cusip.js
-//
-// CUSIP → issuer CIK (first 6 characters of CUSIP)
-// You can extend this over time as you add more issuers.
-const issuerMap = {
-  "48136H": "19617", // JPMorgan Chase Financial Company LLC
-  "48134K": "19617",
-  "46647P": "19617"
-};
 
-// Helper to pad a CIK to 10 digits for the SEC "submissions" API
-function padCik10(cik) {
-  return cik.toString().padStart(10, "0");
-}
-
-module.exports = async (req, res) => {
-  res.setHeader("Content-Type", "application/json");
-
+export default async function handler(req, res) {
   try {
-    const cusipRaw = req.query.cusip;
-    if (!cusipRaw) {
-      return res.status(400).json({ message: "CUSIP missing" });
+    const { cusip } = req.query;
+
+    if (!cusip) {
+      return res.status(400).json({ message: "CUSIP is required" });
     }
 
-    const cusip = cusipRaw.trim().toUpperCase();
-    const prefix = cusip.substring(0, 6);
-    const cikShort = issuerMap[prefix];
+    // TODO: replace this with your real provider call
+    // Example pattern:
+    //
+    // const response = await fetch(`https://your-provider.example.com/search?cusip=${encodeURIComponent(cusip)}&apikey=${process.env.YOUR_API_KEY}`);
+    //
+    // if (!response.ok) {
+    //   const text = await response.text();
+    //   return res.status(502).json({
+    //     message: "Upstream provider returned non-OK status",
+    //     status: response.status,
+    //     body: text
+    //   });
+    // }
+    //
+    // const data = await response.json();
 
-    if (!cikShort) {
+    // For now, I'll assume your provider returns a shape like:
+    // { filings: [ { accessionNo, formType, filedAt, ... }, ... ] }
+    //
+    // Replace the next two lines with your actual `data`:
+    const data = {}; // <-- CHANGE THIS to whatever your provider returns
+    const filings = data.filings; // <-- CHANGE THIS field name if needed
+
+    // Defensive checks so we NEVER crash with "[0]" errors
+    if (!data || !Array.isArray(filings) || filings.length === 0) {
       return res.status(404).json({
-        message: `Unknown issuer prefix ${prefix}. Add to issuerMap in analyze-cusip.js.`,
-        cusip
-      });
-    }
-
-    const cikPadded = padCik10(cikShort);
-    const numericCik = parseInt(cikShort, 10);
-
-    // IMPORTANT: set this env var in Vercel → Project → Settings → Environment Variables
-    // e.g. "StructuredNoteAnalyzer/1.0 (youremail@example.com)"
-    const userAgent =
-      process.env.SEC_USER_AGENT ||
-      "StructuredNoteAnalyzer/1.0 (youremail@example.com)";
-
-    // 1) Pull the issuer's recent filings from SEC "submissions" API
-    const submissionsUrl = `https://data.sec.gov/submissions/CIK${cikPadded}.json`;
-
-    const subsResp = await fetch(submissionsUrl, {
-      headers: {
-        "User-Agent": userAgent,
-        Accept: "application/json"
-      }
-    });
-
-    if (!subsResp.ok) {
-      const body = await subsResp.text();
-      return res.status(502).json({
-        message: "Error calling SEC submissions API",
-        status: subsResp.status,
-        body
-      });
-    }
-
-    const subsJson = await subsResp.json();
-    const recent = subsJson.filings && subsJson.filings.recent;
-
-    if (!recent || !recent.form || !recent.accessionNumber) {
-      return res.status(404).json({
-        message: "No recent filings found in SEC submissions data",
+        source: "alt-provider",
         cusip,
-        cik: cikShort
+        message: "No filings found for this CUSIP from the provider.",
+        rawResponseShape: data ? Object.keys(data) : []
       });
     }
 
-    // 2) Collect candidate pricing supplements (424B2 / FWP)
-    const forms = recent.form;
-    const accessionNumbers = recent.accessionNumber;
-    const filingDates = recent.filingDate;
-    const primaryDocs = recent.primaryDoc;
+    // Safe to access index 0
+    const first = filings[0];
 
-    const candidates = [];
-    for (let i = 0; i < forms.length; i++) {
-      const form = forms[i];
-      if (form === "424B2" || form === "FWP") {
-        candidates.push({
-          accessionNo: accessionNumbers[i],
-          filedAt: filingDates[i],
-          primaryDoc: primaryDocs[i]
-        });
-      }
-    }
+    // Build a minimal meta object (adapt to your provider’s fields)
+    const filingMeta = {
+      accessionNo: first.accessionNo || first.id || null,
+      formType: first.formType || first.form || null,
+      filedAt: first.filedAt || first.filingDate || null,
+      cik: first.cik || null
+    };
 
-    if (candidates.length === 0) {
-      return res.status(404).json({
-        message: "No 424B2 / FWP filings found for this issuer in recent submissions.",
-        cusip,
-        cik: cikShort
-      });
-    }
-
-    // 3) For each candidate, fetch the HTML and search for the CUSIP string
-    let match = null;
-
-    for (const candidate of candidates) {
-      const accessionNoNoDashes = candidate.accessionNo.replace(/-/g, "");
-      const htmlUrl = `https://www.sec.gov/Archives/edgar/data/${numericCik}/${accessionNoNoDashes}/${candidate.primaryDoc}`;
-
-      const htmlResp = await fetch(htmlUrl, {
-        headers: {
-          "User-Agent": userAgent,
-          Accept: "text/html"
-        }
-      });
-
-      if (!htmlResp.ok) {
-        // Skip bad HTMLs but log them in the response
-        continue;
-      }
-
-      const html = await htmlResp.text();
-      if (html.toUpperCase().includes(cusip)) {
-        match = {
-          filingMeta: candidate,
-          html
-        };
-        break;
-      }
-    }
-
-    if (!match) {
-      return res.status(404).json({
-        source: "sec.gov",
-        cusip,
-        cik: cikShort,
-        message:
-          "Scanned recent 424B2/FWP filings for this issuer but did not find this CUSIP in the HTML."
-      });
-    }
-
-    // 4) Return filing meta + a small preview of the HTML text
-    const previewLength = 1200;
-    const preview =
-      match.html.length > previewLength
-        ? match.html.substring(0, previewLength) + "..."
-        : match.html;
-
+    // For now we just return meta; later we’ll fetch & parse HTML with ChatGPT
     return res.status(200).json({
-      source: "sec.gov",
+      source: "alt-provider",
       cusip,
-      cik: cikShort,
-      filingMeta: match.filingMeta,
-      htmlPreview: preview,
-      message: "Found a pricing supplement whose HTML contains this CUSIP."
+      filingsCount: filings.length,
+      filingMeta,
+      message: "Found at least one filing for this CUSIP."
     });
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -159,5 +68,4 @@ module.exports = async (req, res) => {
       error: err.toString()
     });
   }
-};
-
+}
