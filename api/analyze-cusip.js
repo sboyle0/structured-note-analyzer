@@ -1,70 +1,109 @@
 // api/analyze-cusip.js
+//
+// Simple, defensive handler that:
+// - Calls sec-api.io full-text search over EDGAR
+// - Looks for 424B2 / FWP filings that mention the CUSIP
+// - Returns basic metadata + links
+// - Never assumes arrays exist before checking them
 
 export default async function handler(req, res) {
   try {
     const { cusip } = req.query;
 
     if (!cusip) {
-      return res.status(400).json({ message: "CUSIP is required" });
-    }
-
-    // TODO: replace this with your real provider call
-    // Example pattern:
-    //
-    // const response = await fetch(`https://your-provider.example.com/search?cusip=${encodeURIComponent(cusip)}&apikey=${process.env.YOUR_API_KEY}`);
-    //
-    // if (!response.ok) {
-    //   const text = await response.text();
-    //   return res.status(502).json({
-    //     message: "Upstream provider returned non-OK status",
-    //     status: response.status,
-    //     body: text
-    //   });
-    // }
-    //
-    // const data = await response.json();
-
-    // For now, I'll assume your provider returns a shape like:
-    // { filings: [ { accessionNo, formType, filedAt, ... }, ... ] }
-    //
-    // Replace the next two lines with your actual `data`:
-    const data = {}; // <-- CHANGE THIS to whatever your provider returns
-    const filings = data.filings; // <-- CHANGE THIS field name if needed
-
-    // Defensive checks so we NEVER crash with "[0]" errors
-    if (!data || !Array.isArray(filings) || filings.length === 0) {
-      return res.status(404).json({
-        source: "alt-provider",
-        cusip,
-        message: "No filings found for this CUSIP from the provider.",
-        rawResponseShape: data ? Object.keys(data) : []
+      return res.status(400).json({
+        message: "CUSIP missing in query string, e.g. ?cusip=48136H7D4"
       });
     }
 
-    // Safe to access index 0
-    const first = filings[0];
+    const apiKey = process.env.SEC_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        message: "SEC_API_KEY environment variable is not set in Vercel."
+      });
+    }
 
-    // Build a minimal meta object (adapt to your provider’s fields)
-    const filingMeta = {
-      accessionNo: first.accessionNo || first.id || null,
-      formType: first.formType || first.form || null,
-      filedAt: first.filedAt || first.filingDate || null,
-      cik: first.cik || null
+    // Full-text search query: look for this CUSIP in 424B2 or FWP
+    const searchBody = {
+      query: `\"${cusip}\" AND (formType:424B2 OR formType:FWP)`,
+      from: 0,
+      size: 10,
+      sort: [{ filedAt: { order: "desc" } }]
     };
 
-    // For now we just return meta; later we’ll fetch & parse HTML with ChatGPT
-    return res.status(200).json({
-      source: "alt-provider",
-      cusip,
-      filingsCount: filings.length,
-      filingMeta,
-      message: "Found at least one filing for this CUSIP."
+    const response = await fetch("https://api.sec-api.io/full-text-search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // sec-api.io expects the API token here
+        Authorization: apiKey
+      },
+      body: JSON.stringify(searchBody)
     });
 
+    // Read the raw body first so we can return it even on non-OK status
+    const rawText = await response.text();
+
+    if (!response.ok) {
+      // Do NOT throw – just surface whatever sec-api.io sent
+      return res.status(response.status).json({
+        message: "sec-api.io returned a non-OK status",
+        status: response.status,
+        body: rawText
+      });
+    }
+
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (e) {
+      return res.status(500).json({
+        message: "Could not parse JSON from sec-api.io",
+        raw: rawText
+      });
+    }
+
+    // sec-api full-text search usually returns { filings: [...] }
+    const filings = Array.isArray(data.filings) ? data.filings : [];
+
+    if (filings.length === 0) {
+      // Nothing crashed; we just didn’t find a filing
+      return res.status(404).json({
+        source: "sec-api.io",
+        cusip,
+        filingsCount: 0,
+        filingMeta: null,
+        message:
+          "No 424B2 / FWP filings found for this CUSIP (full-text search).",
+        raw: data
+      });
+    }
+
+    // Take the most recent filing
+    const filing = filings[0] || {};
+
+    return res.status(200).json({
+      source: "sec-api.io",
+      cusip,
+      filingsCount: filings.length,
+      filingMeta: {
+        accessionNo: filing.accessionNo || null,
+        formType: filing.formType || null,
+        filedAt: filing.filedAt || null,
+        cik: filing.cik || null,
+        companyName: filing.companyNameLong || filing.companyName || null
+      },
+      linkToHtml: filing.linkToHtml || null,
+      linkToFilingDetails: filing.linkToFilingDetails || null,
+      message:
+        "Found at least one filing containing this CUSIP via full-text search.",
+      // Optional: you can keep this around for debugging if you want
+      // raw: data
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({
-      message: "Internal server error",
+      message: "Internal server error in /api/analyze-cusip",
       error: err.toString()
     });
   }
