@@ -17,9 +17,7 @@
       --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -34,22 +32,28 @@
 
     .shell {
       width: 100%;
-      max-width: 1120px;
+      max-width: 1160px;
       background: #f9fafb;
       border-radius: 16px;
-      padding: 18px 20px 20px;
+      padding: 20px 20px 18px;
       border: 1px solid var(--border-subtle);
-      box-shadow: 0 20px 40px rgba(15,23,42,0.06);
+      box-shadow: 0 24px 40px rgba(15,23,42,0.06);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
 
-    header {
+    @media (min-width: 1024px) {
+      .shell {
+        padding: 22px 24px 20px;
+      }
+    }
+
+    header.topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
@@ -88,30 +92,26 @@
     .top-note {
       font-size: 12px;
       color: var(--text-muted);
-      text-align: right;
-    }
-
-    main {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 4px;
     }
 
     .card {
       background: var(--bg-card);
       border-radius: 12px;
       border: 1px solid var(--border-subtle);
-      padding: 12px 14px;
+      padding: 14px 14px 12px;
       box-shadow: 0 1px 2px rgba(15,23,42,0.04);
     }
 
     .card-header {
+      margin-bottom: 10px;
+    }
+
+    .card-title-row {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
       gap: 8px;
-      margin-bottom: 8px;
+      flex-wrap: wrap;
     }
 
     .card-title {
@@ -135,33 +135,46 @@
       white-space: nowrap;
     }
 
-    .search-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-
     label {
-      font-size: 12px;
-      color: #374151;
-      margin-bottom: 4px;
       display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: #374151;
       font-weight: 500;
     }
 
+    .input-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) auto auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    @media (max-width: 720px) {
+      .input-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
     .input {
+      width: 100%;
       border-radius: 8px;
       border: 1px solid var(--border-strong);
       background: #ffffff;
+      color: var(--text-main);
       padding: 8px 10px;
       font-size: 13px;
-      flex: 1;
-      min-width: 200px;
+      outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
     }
 
     .input::placeholder {
       color: #9ca3af;
+    }
+
+    .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px #bfdbfe;
     }
 
     .btn {
@@ -171,14 +184,14 @@
       gap: 6px;
       border-radius: 8px;
       border: 1px solid transparent;
-      padding: 8px 14px;
+      padding: 7px 14px;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
       background: var(--accent);
       color: #ffffff;
-      white-space: nowrap;
       transition: background 0.1s ease, border-color 0.1s ease;
+      white-space: nowrap;
     }
 
     .btn:hover {
@@ -195,31 +208,21 @@
       background: #f3f4f6;
     }
 
-    .hint {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .toolbar {
+    .filters {
+      margin-top: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-top: 8px;
-    }
-
-    .toolbar-left {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .toolbar-right {
       font-size: 12px;
       color: var(--text-muted);
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .select {
@@ -235,42 +238,44 @@
       background: var(--bg-card);
       border-radius: 12px;
       border: 1px solid var(--border-subtle);
-      padding: 10px 12px;
+      padding: 12px 12px 10px;
       box-shadow: 0 1px 2px rgba(15,23,42,0.04);
     }
 
     .table-wrapper {
-      overflow-x: auto;
-      margin-top: 4px;
+      margin-top: 6px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      overflow: auto;
+      background: #ffffff;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
+      min-width: 880px;
     }
 
     thead {
       background: #f3f4f6;
     }
 
-    th,
-    td {
-      padding: 6px 8px;
+    th, td {
+      font-size: 12px;
+      padding: 8px 8px;
       text-align: left;
       border-bottom: 1px solid #e5e7eb;
       vertical-align: top;
     }
 
     th {
-      font-size: 11px;
-      color: var(--text-muted);
       font-weight: 500;
+      color: var(--text-muted);
       white-space: nowrap;
     }
 
-    td {
-      font-size: 12px;
+    tr:last-child td {
+      border-bottom: none;
     }
 
     .issuer-cell {
@@ -284,122 +289,133 @@
       margin-top: 2px;
     }
 
-    .pill {
+    .tag {
       display: inline-flex;
-      padding: 2px 6px;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
       border-radius: 999px;
-      border: 1px solid #d1d5db;
-      background: #f9fafb;
       font-size: 11px;
-      color: #374151;
+      border: 1px solid transparent;
     }
 
-    .pill.callable {
-      border-color: #a7f3d0;
+    .type-point {
+      border-color: #bbf7d0;
       background: #ecfdf3;
-      color: #047857;
+      color: #166534;
     }
 
-    .pill.point {
+    .type-callable {
       border-color: #bfdbfe;
       background: #eff6ff;
       color: #1d4ed8;
     }
 
-    .empty-state {
+    .no-data {
+      text-align: center;
       font-size: 12px;
       color: var(--text-muted);
-      text-align: center;
-      padding: 16px 0;
+      padding: 16px 8px;
     }
   </style>
 </head>
 <body>
   <div class="shell">
-    <header>
+    <header class="topbar">
       <div class="brand">
         <div class="brand-logo">SN</div>
         <div class="brand-text">
           <h1>Structured Note Overview</h1>
-          <p>Grid view of key terms by CUSIP.</p>
+          <p>Compare key terms across multiple CUSIPs at a glance.</p>
         </div>
       </div>
       <div class="top-note">
-        Prototype &nbsp;·&nbsp; Data sources: SEC filings (via API)
+        Internal prototype · Data sourced from SEC filings & parsing logic
       </div>
     </header>
 
-    <main>
-      <section class="card">
-        <div class="card-header">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-row">
           <div>
-            <div class="card-title">Add CUSIPs</div>
+            <div class="card-title">Add notes by CUSIP</div>
             <div class="card-subtitle">
-              Enter one or more CUSIPs to populate the overview table.
+              Enter one or more CUSIPs and we’ll fetch and parse the latest pricing supplement.
             </div>
           </div>
-          <span class="badge-soft">Overview table</span>
+          <span class="badge-soft" id="count-label">No CUSIPs added yet.</span>
         </div>
+      </div>
 
+      <div class="input-row">
         <div>
           <label for="cusip-input">CUSIP(s)</label>
-          <div class="search-row">
-            <input
-              id="cusip-input"
-              class="input"
-              placeholder="e.g. 48136H7D4 or 48136H7D4, 48134K541"
-            />
-            <button id="add-btn" class="btn">Add to table</button>
-            <button id="clear-btn" class="btn secondary">Clear all</button>
-          </div>
-          <div class="hint">
-            You can paste multiple CUSIPs separated by commas. Each CUSIP will be
-            looked up via the /api/analyze-cusip endpoint.
-          </div>
+          <input
+            id="cusip-input"
+            type="text"
+            class="input"
+            placeholder="Enter one or more CUSIPs, separated by commas"
+          />
         </div>
 
-        <div class="toolbar">
-          <div class="toolbar-left">
-            <label for="type-filter" style="margin: 0; font-weight: 400;">Filter by profile:</label>
-            <select id="type-filter" class="select">
-              <option value="all">All notes</option>
-              <option value="point">Point-to-point</option>
-              <option value="callable">Callable</option>
-            </select>
-          </div>
-          <div class="toolbar-right">
-            <span id="count-label">No CUSIPs added yet.</span>
-          </div>
-        </div>
-      </section>
+        <button id="add-btn" class="btn">Add to table</button>
+        <button id="clear-btn" class="btn secondary">Clear table</button>
+      </div>
 
-      <section class="overview-card">
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>CUSIP</th>
-                <th>Issuer</th>
-                <th>Underliers</th>
-                <th>Initial values</th>
-                <th>Payout profile</th>
-                <th>Initial est. value</th>
-                <th>Total fees</th>
-                <th>Final observation date</th>
-                <th>Type</th>
-              </tr>
-            </thead>
-            <tbody id="notes-body">
-              <tr>
-                <td colspan="9" class="empty-state">
-                  No CUSIPs added yet. Add one above to see it here.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="filters">
+        <div class="filter-group">
+          <label for="type-filter">View</label>
+          <select id="type-filter" class="select">
+            <option value="all">All notes</option>
+            <option value="point">Point-to-point only</option>
+            <option value="callable">Callable only</option>
+          </select>
         </div>
-      </section>
-    </main>
+        <div>
+          <span style="font-size: 11px; color: var(--text-muted);">
+            Note: Each CUSIP requires a live lookup and parsing step, so responses may take a few seconds.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="overview-card">
+      <div class="card-header">
+        <div class="card-title-row">
+          <div>
+            <div class="card-title">Note grid</div>
+            <div class="card-subtitle">
+              High-level comparison view. Detailed note pages can be added later from each row.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>CUSIP</th>
+              <th>Issuer</th>
+              <th>Underlier(s)</th>
+              <th>Initial values</th>
+              <th>Payout profile</th>
+              <th>Initial est. value</th>
+              <th>Total fees</th>
+              <th>Final observation date</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="notes-body">
+            <tr>
+              <td colspan="9" class="no-data">
+                No notes yet. Add one or more CUSIPs above to see the grid.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -410,66 +426,164 @@
     const notesBody = document.getElementById('notes-body');
     const countLabel = document.getElementById('count-label');
 
-    // NEW: call the live /api/analyze-cusip endpoint for a single CUSIP
-    async function fetchNoteForCusip(cusipRaw) {
-      const cusip = cusipRaw.trim().toUpperCase();
-      if (!cusip) return null;
+    const state = {
+      notes: [] // rows currently in the table
+    };
 
-      try {
-        const resp = await fetch(`/api/analyze-cusip?cusip=${encodeURIComponent(cusip)}`);
-        if (!resp.ok) {
-          console.error('API error for CUSIP', cusip, resp.status);
-          return {
-            cusip,
-            issuer: 'Filing not found',
-            underliers: {
-              description: 'No SEC filing located',
-              detail: 'The CUSIP did not return a filing from the search API.'
-            },
-            initialValues: '—',
-            payoutProfile: '—',
-            initialEstValue: '—',
-            totalFees: '—',
-            finalObs: '—',
-            type: 'point'
-          };
-        }
-
-        const data = await resp.json();
-        const m = data.filingMeta || {};
-
-        return {
-          cusip,
-          issuer: m.companyName || 'Unknown issuer',
-          underliers: {
-            description: 'To be parsed from filing',
-            detail: [
-              m.formType || '',
-              m.filedAt ? `filed ${m.filedAt}` : ''
-            ].filter(Boolean).join(' · ')
-          },
-          initialValues: 'To be parsed',
-          payoutProfile: 'To be parsed',
-          initialEstValue: 'To be parsed',
-          totalFees: 'To be parsed',
-          finalObs: 'To be parsed',
-          // For now, treat all as "callable" so they show up in that filter too.
-          // Later we’ll classify based on the parsed terms from ChatGPT.
-          type: 'callable'
-        };
-      } catch (err) {
-        console.error('Error calling /api/analyze-cusip', err);
-        return null;
+    function setLoading(isLoading) {
+      if (isLoading) {
+        addBtn.disabled = true;
+        addBtn.textContent = 'Loading…';
+      } else {
+        addBtn.disabled = false;
+        addBtn.textContent = 'Add to table';
       }
     }
 
-    const state = {
-      notes: [] // array of note objects returned by fetchNoteForCusip
-    };
+    function transformNoteForTable(cusip, apiNote) {
+      const underliers = Array.isArray(apiNote.underliers) ? apiNote.underliers : [];
+
+      let description = '—';
+      if (underliers.length === 1) {
+        description = 'Single underlier';
+      } else if (underliers.length > 1) {
+        const isWorstOf = underliers.some(u =>
+          String(u.worst_of_or_basket || '').toLowerCase().includes('worst')
+        );
+        description = isWorstOf ? 'Worst-of basket' : 'Basket';
+      }
+
+      const detail = underliers.length
+        ? underliers
+            .map(u => {
+              const parts = [];
+              if (u.ticker) parts.push(u.ticker);
+              if (u.name) parts.push(u.name);
+              if (u.weighting != null) parts.push(`(${u.weighting})`);
+              return parts.join(' ');
+            })
+            .join(' · ')
+        : '—';
+
+      const initialValues = underliers.length
+        ? underliers
+            .map(u => {
+              const label = u.ticker || u.name || 'Underlier';
+              const lvl =
+                typeof u.initial_level === 'number'
+                  ? u.initial_level.toFixed(4)
+                  : '—';
+              return `${label}: ${lvl}`;
+            })
+            .join(' · ')
+        : '—';
+
+      const payoutProfile =
+        apiNote.product_type ||
+        apiNote.profile_key ||
+        (apiNote.coupon && apiNote.coupon.label) ||
+        '—';
+
+      let initialEstValue = '—';
+      let totalFees = '—';
+      if (apiNote.payoff_today && typeof apiNote.payoff_today.pct_of_par === 'number') {
+        const pct = apiNote.payoff_today.pct_of_par;
+        initialEstValue = `${pct.toFixed(2)}% of par`;
+        const feePct = 100 - pct;
+        if (!Number.isNaN(feePct)) {
+          totalFees = `${feePct.toFixed(2)}% approx.`;
+        }
+      }
+
+      const finalObs =
+        apiNote.final_observation_date ||
+        apiNote.maturity_date ||
+        '—';
+
+      const joinSource = `${apiNote.product_type || ''} ${apiNote.profile_key || ''}`.toLowerCase();
+      const type = joinSource.includes('call') ? 'callable' : 'point';
+
+      return {
+        cusip,
+        issuer: apiNote.issuer || '—',
+        underliers: {
+          description,
+          detail
+        },
+        initialValues,
+        payoutProfile,
+        initialEstValue,
+        totalFees,
+        finalObs,
+        type
+      };
+    }
+
+    async function fetchNoteFromApis(cusipRaw) {
+      const cusip = cusipRaw.trim().toUpperCase();
+      if (!cusip) {
+        throw new Error('Empty CUSIP');
+      }
+
+      // Step 1: find the latest filing that contains this CUSIP
+      const analyzeResp = await fetch(`/api/analyze-cusip?cusip=${encodeURIComponent(cusip)}`);
+      const analyzeText = await analyzeResp.text();
+      let analyzeJson;
+      try {
+        analyzeJson = JSON.parse(analyzeText);
+      } catch (e) {
+        console.error('Could not parse JSON from /api/analyze-cusip:', analyzeText);
+        throw new Error('Unexpected response from filing search.');
+      }
+
+      if (!analyzeResp.ok) {
+        const msg = analyzeJson && analyzeJson.message
+          ? analyzeJson.message
+          : `Error from /api/analyze-cusip (${analyzeResp.status})`;
+        throw new Error(msg);
+      }
+
+      const meta = analyzeJson.filingMeta || {};
+      const accessionNo = meta.accessionNo;
+      const cik = meta.cik;
+
+      if (!accessionNo || !cik) {
+        throw new Error('Filing metadata missing accessionNo or CIK.');
+      }
+
+      // Step 2: fetch & parse the filing into structured terms
+      const parseUrl =
+        `/api/parse-filing?cusip=${encodeURIComponent(cusip)}` +
+        `&accessionNo=${encodeURIComponent(accessionNo)}` +
+        `&cik=${encodeURIComponent(cik)}`;
+
+      const parseResp = await fetch(parseUrl);
+      const parseText = await parseResp.text();
+      let parseJson;
+      try {
+        parseJson = JSON.parse(parseText);
+      } catch (e) {
+        console.error('Could not parse JSON from /api/parse-filing:', parseText);
+        throw new Error('Unexpected response when parsing filing.');
+      }
+
+      if (!parseResp.ok) {
+        const msg = parseJson && parseJson.message
+          ? parseJson.message
+          : `Error from /api/parse-filing (${parseResp.status})`;
+        throw new Error(msg);
+      }
+
+      if (!parseJson.note) {
+        throw new Error('Backend did not return a parsed note.');
+      }
+
+      return transformNoteForTable(cusip, parseJson.note);
+    }
 
     function renderTable() {
       const filter = typeFilter.value;
-      let visible = state.notes;
+      let visible = state.notes.slice();
 
       if (filter === 'point') {
         visible = visible.filter(n => n.type === 'point');
@@ -480,21 +594,18 @@
       notesBody.innerHTML = '';
 
       if (visible.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td colspan="9" class="empty-state">
-            ${
-              state.notes.length
+        notesBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="no-data">
+              ${state.notes.length
                 ? 'All rows filtered out. Adjust filters to see notes.'
-                : 'No CUSIPs added yet.'
-            }
-          </td>
+                : 'No notes yet. Add one or more CUSIPs above to see the grid.'}
+            </td>
+          </tr>
         `;
-        notesBody.appendChild(tr);
-        countLabel.textContent =
-          state.notes.length === 0
-            ? 'No CUSIPs added yet.'
-            : `0 of ${state.notes.length} notes in view (filter applied).`;
+        countLabel.textContent = state.notes.length
+          ? 'All rows filtered out. Adjust filters.'
+          : 'No CUSIPs added yet.';
         return;
       }
 
@@ -515,37 +626,48 @@
           <td>${note.totalFees}</td>
           <td>${note.finalObs}</td>
           <td>
-            <span class="pill ${note.type === 'callable' ? 'callable' : 'point'}">
-              ${note.type === 'callable' ? 'Callable' : 'Point-to-point'}
+            <span class="tag ${note.type === 'point' ? 'type-point' : 'type-callable'}">
+              ${note.type === 'point' ? 'Point-to-point' : 'Callable'}
             </span>
           </td>
         `;
         notesBody.appendChild(tr);
       });
 
-      const total = state.notes.length;
-      const shown = visible.length;
-      countLabel.textContent =
-        shown === total
-          ? `${shown} note${shown === 1 ? '' : 's'} in view.`
-          : `${shown} of ${total} note${total === 1 ? '' : 's'} in view.`;
+      countLabel.textContent = `${visible.length} note${visible.length === 1 ? '' : 's'} shown`;
     }
 
     addBtn.addEventListener('click', async () => {
       const input = cusipInput.value;
       if (!input.trim()) return;
 
-      const parts = input.split(',');
-      for (const p of parts) {
-        const note = await fetchNoteForCusip(p);
-        if (!note) continue;
-        // avoid duplicates by CUSIP
-        if (!state.notes.find(n => n.cusip === note.cusip)) {
-          state.notes.push(note);
-        }
-      }
+      const parts = input
+        .split(',')
+        .map(p => p.trim())
+        .filter(Boolean);
 
-      renderTable();
+      if (!parts.length) return;
+
+      setLoading(true);
+      try {
+        for (const raw of parts) {
+          const cusip = raw.toUpperCase();
+          if (state.notes.find(n => n.cusip === cusip)) {
+            continue; // avoid duplicates
+          }
+
+          try {
+            const note = await fetchNoteFromApis(cusip);
+            state.notes.push(note);
+          } catch (err) {
+            console.error(err);
+            alert(`Could not load data for ${cusip}: ${err.message || err}`);
+          }
+        }
+        renderTable();
+      } finally {
+        setLoading(false);
+      }
     });
 
     clearBtn.addEventListener('click', () => {
@@ -559,7 +681,10 @@
       if (e.key === 'Enter') addBtn.click();
     });
 
+    // Initial render
     renderTable();
   </script>
+
 </body>
 </html>
+
