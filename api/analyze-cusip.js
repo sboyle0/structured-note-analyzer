@@ -1,148 +1,85 @@
-// api/analyze-cusip.js
-// Serverless function on Vercel: /api/analyze-cusip?cusip=48136H7D4
+\import { SecAPI } from "sec-api";
+
+const secApi = new SecAPI(process.env.SEC_API_KEY);
+
+// Map first 6 digits of CUSIP → CIK
+// You will expand this list over time
+const issuerMap = {
+  "48136H": "19617",     // JPMorgan Chase Financial Company LLC
+  "48134K": "19617",     // More JPM prefixes
+  "46647P": "19617"      // Etc — you will add UBS, HSBC, MS, C, BAC later
+};
 
 export default async function handler(req, res) {
   try {
-    const { cusip } = req.query;
+    const cusip = req.query.cusip;
+    if (!cusip) return res.status(400).json({ error: "CUSIP missing" });
 
-    if (!cusip) {
-      return res.status(400).json({ message: "Missing ?cusip= parameter" });
-    }
+    const prefix = cusip.substring(0, 6).toUpperCase();
+    const cik = issuerMap[prefix];
 
-    const SEC_API_KEY = process.env.SEC_API_KEY;
-    if (!SEC_API_KEY) {
-      return res.status(500).json({
-        message: "SEC_API_KEY is not set in Vercel environment variables."
+    if (!cik) {
+      return res.status(404).json({
+        message: `Unknown issuer prefix ${prefix}. Add to issuerMap.`,
+        cusip
       });
     }
 
-    // 1) Use sec-api.io Query API to look for 424B2 / FWP filings
-    //    where the CUSIP appears anywhere in the text.
-    const queryPayload = {
-      query: `formType:(\"424B2\" OR \"FWP\") AND fullText:\"${cusip}\"`,
-      from: "0",
-      size: "1",
-      sort: [{ filedAt: { order: "desc" } }]
-    };
-
-    const filingsRes = await fetch("https://api.sec-api.io", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: SEC_API_KEY
+    // 1) Get last 100 pricing supplements for this CIK
+    const filings = await secApi.search({
+      query: {
+        query_string: {
+          query: `cik:${cik} AND (formType:424B2 OR formType:FWP)`
+        }
       },
-      body: JSON.stringify(queryPayload)
+      from: 0,
+      size: 100,
+      sort: [{ filedAt: { order: "desc" } }]
     });
 
-    if (!filingsRes.ok) {
-      const text = await filingsRes.text();
-      console.error("sec-api query error:", filingsRes.status, text);
-      return res.status(500).json({
-        message: "Error calling sec-api.io query endpoint.",
-        status: filingsRes.status,
-        body: text
-      });
-    }
-
-    const filingsJson = await filingsRes.json();
-    const filing = filingsJson && filingsJson.filings && filingsJson.filings[0];
-
-    if (!filing) {
-      return res.status(200).json({
-        source: "sec-api.io",
+    if (!filings.filings || filings.filings.length === 0) {
+      return res.status(404).json({
+        message: "No pricing supplements found for issuer",
         cusip,
-        filingMeta: null,
-        note: null,
-        message: "No 424B2 / FWP filings found for this CUSIP (full-text search)."
+        cik
       });
     }
 
-    const filingMeta = {
-      accessionNo: filing.accessionNo,
-      formType: filing.formType,
-      filedAt: filing.filedAt,
-      companyName: filing.companyName,
-      cik: filing.cik,
-      linkToHtml: filing.linkToHtml
-    };
+    // 2) Loop filings and inspect HTML for exact CUSIP match
+    let match = null;
 
-    // 2) Download the full HTML text of the filing
-    //    We’ll use sec-api.io's "filing-text" endpoint for simplicity.
-    const filingTextRes = await fetch(
-      `https://api.sec-api.io/filing-text?accessionNo=${encodeURIComponent(
-        filing.accessionNo
-      )}`,
-      {
-        headers: {
-          Authorization: SEC_API_KEY
-        }
+    for (const f of filings.filings) {
+      const html = await secApi.filing(f.linkToHtml);
+
+      if (html && html.includes(cusip)) {
+        match = { filing: f, html };
+        break;
       }
-    );
+    }
 
-    if (!filingTextRes.ok) {
-      const text = await filingTextRes.text();
-      console.error("sec-api filing-text error:", filingTextRes.status, text);
-      return res.status(500).json({
-        source: "sec-api.io",
+    if (!match) {
+      return res.status(404).json({
+        message: "CUSIP not found in any recent pricing supplements for issuer",
         cusip,
-        filingMeta,
-        note: null,
-        message: "Found filing, but failed to download filing text."
+        cik
       });
     }
 
-    const rawText = await filingTextRes.text();
-
-    // 3) For now, we are NOT yet using an AI model to parse the document.
-    //    We just return:
-    //    - filing metadata
-    //    - a short preview of the raw text
-    //    - a stub "note" object that your frontend already understands
-    const rawTextPreview =
-      rawText.length > 1000 ? rawText.slice(0, 1000) + "…" : rawText;
-
-    const noteStub = {
-      issuer: filing.companyName || "Issuer from filing",
-      issuer_sub: "Parsed issuer description will go here.",
-      trade_date: "To be parsed",
-      maturity_date: "To be parsed",
-      product_type: "To be parsed (e.g. Autocallable Contingent Income Note)",
-      profile_key: "To be parsed (e.g. autocallable_single_underlier_barrier)",
-      coupon: {
-        label:
-          "To be parsed (e.g. 8.50% p.a. contingent quarterly coupon)",
-        structure: "To be parsed from document.",
-        barrier: "To be parsed from document."
-      },
-      protection: {
-        label: "To be parsed (e.g. 70% European barrier)",
-        principal: "To be parsed.",
-        downside: "To be parsed."
-      },
-      underliers: [],
-      payoff_today: {
-        amount_per_1000: null,
-        pct_of_par: null,
-        status: "Not yet calculated",
-        status_variant: "upside",
-        explanation:
-          "Payoff logic not yet implemented for live data.",
-        subtitle: "Phase 1 – only filing lookup + text fetch is live."
-      }
-    };
-
-    return res.status(200).json({
+    // 3) Return the matched filing HTML so next step can parse terms
+    return res.json({
       source: "sec-api.io",
       cusip,
-      filingMeta,
-      rawTextPreview,
-      note: noteStub
+      cik,
+      filingMeta: match.filing,
+      htmlPreview: match.html.substring(0, 1000) + "...",
+      message: "Found pricing supplement containing this CUSIP"
     });
+
   } catch (err) {
-    console.error("analyze-cusip internal error:", err);
+    console.error(err);
     return res.status(500).json({
-      message: "Internal error in analyze-cusip function.",
-      error: String(err && err.message ? err.message : err)
+      message: "Internal server error",
+      error: err.toString()
     });
   }
 }
