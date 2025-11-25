@@ -1,4 +1,4 @@
-\import { SecAPI } from "sec-api";
+\const { SecAPI } = require("sec-api");
 
 const secApi = new SecAPI(process.env.SEC_API_KEY);
 
