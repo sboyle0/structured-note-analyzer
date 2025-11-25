@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 1) Full-text search via sec-api.io – find filings containing this CUSIP
+    // 1) Full-text search via sec-api.io using only the CUSIP
     const searchBody = {
       query: {
         query_string: {
@@ -33,14 +33,17 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // sec-api.io expects the API token here
         Authorization: apiKey
       },
       body: JSON.stringify(searchBody)
     });
 
+    // Read the raw body first so we can return it even on non-OK status
     const rawText = await response.text();
 
     if (!response.ok) {
+      // Do NOT throw – just surface whatever sec-api.io sent
       return res.status(response.status).json({
         message: "sec-api.io returned a non-OK status",
         status: response.status,
@@ -58,54 +61,107 @@ export default async function handler(req, res) {
       });
     }
 
+    // sec-api full-text search usually returns { filings: [...] }
     const filings = Array.isArray(data.filings) ? data.filings : [];
 
     if (filings.length === 0) {
+      // Nothing crashed; we just didn’t find a filing
       return res.status(404).json({
         source: "sec-api.io",
         cusip,
         filingsCount: 0,
         filingMeta: null,
-        message: "No filings found for this CUSIP (full-text search).",
+        message:
+          "No filings found for this CUSIP (full-text search).",
         raw: data
       });
     }
 
+    // Take the most recent filing
     const filing = filings[0] || {};
+
     const accessionNo = filing.accessionNo || null;
-    const cik = filing.cik || null;
+    const formType = filing.formType || null;
+    const filedAt = filing.filedAt || null;
+    const cikRaw = filing.cik || null;
+    const companyName =
+      filing.companyNameLong || filing.companyName || null;
 
-    let htmlUrl = null;
-    let htmlPreview = null;
+    // 2) Try to build a direct SEC HTML URL using CIK + accession number
+    let linkToHtml = filing.linkToHtml || null;
+    let linkToFilingDetails = filing.linkToFilingDetails || null;
+    let htmlFromIndex = null;
 
-    if (accessionNo && cik) {
+    if (!linkToHtml && accessionNo && cikRaw) {
+      // Example SEC path pattern:
+      // https://www.sec.gov/Archives/edgar/data/{cikWithoutLeadingZeros}/{accessionNoNoDashes}/index.json
+      const cikNoZeros = String(cikRaw).replace(/^0+/, "");
+      const accDir = accessionNo.replace(/-/g, "");
+
+      const indexUrl = `https://www.sec.gov/Archives/edgar/data/${cikNoZeros}/${accDir}/index.json`;
+
       try {
-        const htmlResult = await fetchEdgarHtml(cik, accessionNo);
-        if (htmlResult) {
-          htmlUrl = htmlResult.htmlUrl;
-          htmlPreview = htmlResult.htmlPreview;
+        const indexResp = await fetch(indexUrl, {
+          headers: {
+            // SEC asks for a User-Agent. Use something descriptive for your app.
+            "User-Agent": "structured-note-analyzer/1.0",
+            Accept: "application/json"
+          }
+        });
+
+        if (indexResp.ok) {
+          const indexData = await indexResp.json();
+          const items =
+            indexData &&
+            indexData.directory &&
+            Array.isArray(indexData.directory.item)
+              ? indexData.directory.item
+              : [];
+
+          // Look for an .htm/.html file that is likely the main document
+          const htmlItem =
+            items.find(
+              (it) =>
+                typeof it.name === "string" &&
+                (it.name.toLowerCase().endsWith(".htm") ||
+                  it.name.toLowerCase().endsWith(".html"))
+            ) || null;
+
+          if (htmlItem) {
+            htmlFromIndex = `https://www.sec.gov/Archives/edgar/data/${cikNoZeros}/${accDir}/${htmlItem.name}`;
+            linkToHtml = linkToHtml || htmlFromIndex;
+          }
+        } else {
+          // If SEC index doesn’t respond, we just carry on without crashing
+          console.error(
+            "SEC index returned non-OK status",
+            indexResp.status
+          );
         }
-      } catch (e) {
-        console.error("Error fetching HTML from EDGAR:", e);
+      } catch (indexErr) {
+        console.error("Error fetching SEC index.json", indexErr);
       }
     }
+
+    // Optional: we don’t strictly need a "details" URL, but keep it if sec-api provided it
+    linkToFilingDetails = linkToFilingDetails || null;
 
     return res.status(200).json({
       source: "sec-api.io",
       cusip,
       filingsCount: filings.length,
       filingMeta: {
-        accessionNo: accessionNo,
-        formType: filing.formType || null,
-        filedAt: filing.filedAt || null,
-        cik: cik,
-        companyName: filing.companyNameLong || filing.companyName || null
+        accessionNo,
+        formType,
+        filedAt,
+        cik: cikRaw,
+        companyName
       },
-      htmlUrl,
-      htmlPreview,
-      message: htmlUrl
-        ? "Found at least one filing containing this CUSIP and fetched HTML from EDGAR."
-        : "Found at least one filing containing this CUSIP via full-text search, but HTML fetch may have failed."
+      linkToHtml: linkToHtml || null,
+      linkToFilingDetails,
+      htmlFromSecIndex: htmlFromIndex, // may be null if we couldn’t infer it
+      message:
+        "Found at least one filing containing this CUSIP via full-text search."
     });
   } catch (err) {
     console.error(err);
@@ -116,79 +172,3 @@ export default async function handler(req, res) {
   }
 }
 
-/**
- * Fetch the primary HTML document for a filing directly from sec.gov
- * using CIK + accession number.
- */
-async function fetchEdgarHtml(cikRaw, accessionNo) {
-  // CIK in the URL is the integer without leading zeros
-  const cik = String(parseInt(String(cikRaw), 10));
-  // accession like "0001213900-25-104551" → "000121390025104551"
-  const accessionNoNoDashes = String(accessionNo).replace(/-/g, "");
-
-  const indexUrl = `https://www.sec.gov/Archives/edgar/data/${cik}/${accessionNoNoDashes}/index.json`;
-
-  // IMPORTANT: set a proper User-Agent per SEC guidelines
-  const headers = {
-    "User-Agent": "Structured Note Analyzer (contact: steve.boyle11@gmail.com)",
-    Accept: "application/json"
-  };
-
-  const indexRes = await fetch(indexUrl, { headers });
-
-  if (!indexRes.ok) {
-    console.error("EDGAR index fetch failed:", indexRes.status, indexUrl);
-    return null;
-  }
-
-  const indexData = await indexRes.json();
-
-  const items =
-    indexData &&
-    indexData.directory &&
-    Array.isArray(indexData.directory.item)
-      ? indexData.directory.item
-      : [];
-
-  if (!items.length) {
-    console.error("EDGAR index.json has no items:", indexUrl);
-    return null;
-  }
-
-  // Try to pick the primary HTML doc – prefer *.htm files,
-  // and if possible one that contains "424b" in the name.
-  let primary =
-    items.find(
-      (f) =>
-        /\.htm$/i.test(f.name || "") &&
-        /424b/i.test(f.name || "")
-    ) ||
-    items.find((f) => /\.htm$/i.test(f.name || "")) ||
-    items[0];
-
-  if (!primary || !primary.name) {
-    console.error("Could not identify primary HTML doc from index.json");
-    return null;
-  }
-
-  const htmlUrl = `https://www.sec.gov/Archives/edgar/data/${cik}/${accessionNoNoDashes}/${primary.name}`;
-
-  const htmlRes = await fetch(htmlUrl, {
-    headers: {
-      "User-Agent": "Structured Note Analyzer (contact: steve.boyle11@gmail.com)",
-      Accept: "text/html"
-    }
-  });
-
-  if (!htmlRes.ok) {
-    console.error("EDGAR HTML fetch failed:", htmlRes.status, htmlUrl);
-    return null;
-  }
-
-  const html = await htmlRes.text();
-
-  return {
-    htmlUrl,
-    htmlPreview: html.slice(0, 2000) // just a preview for now
-  };
-}
