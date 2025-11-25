@@ -14,14 +14,12 @@
       --accent-soft: #eff6ff;
       --text-main: #111827;
       --text-muted: #6b7280;
-      --tag-callable: #ecfdf3;
-      --tag-callable-text: #15803d;
-      --tag-point: #eff6ff;
-      --tag-point-text: #1d4ed8;
       --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -39,21 +37,15 @@
       max-width: 1120px;
       background: #f9fafb;
       border-radius: 16px;
-      padding: 20px 18px 18px;
+      padding: 18px 20px 20px;
       border: 1px solid var(--border-subtle);
-      box-shadow: 0 18px 35px rgba(15,23,42,0.06);
+      box-shadow: 0 20px 40px rgba(15,23,42,0.06);
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
 
-    @media (min-width: 1024px) {
-      .shell {
-        padding: 22px 22px 20px;
-      }
-    }
-
-    header.topbar {
+    header {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -64,12 +56,12 @@
     .brand {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .brand-logo {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
       background: var(--accent-soft);
       display: flex;
@@ -77,7 +69,7 @@
       justify-content: center;
       color: var(--accent);
       font-weight: 600;
-      font-size: 15px;
+      font-size: 16px;
       border: 1px solid #bfdbfe;
     }
 
@@ -89,7 +81,7 @@
 
     .brand-text p {
       margin: 2px 0 0;
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
     }
 
@@ -99,50 +91,77 @@
       text-align: right;
     }
 
-    .search-strip {
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .card {
       background: var(--bg-card);
       border-radius: 12px;
-      padding: 10px 12px;
       border: 1px solid var(--border-subtle);
-      box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+      padding: 12px 14px;
+      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .card-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .badge-soft {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      white-space: nowrap;
+    }
+
+    .search-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
 
-    .search-group {
-      flex: 1 1 220px;
-      min-width: 0;
-    }
-
     label {
-      display: block;
-      font-size: 11px;
-      margin-bottom: 3px;
+      font-size: 12px;
       color: #374151;
+      margin-bottom: 4px;
+      display: block;
       font-weight: 500;
     }
 
     .input {
-      width: 100%;
       border-radius: 8px;
       border: 1px solid var(--border-strong);
       background: #ffffff;
-      color: var(--text-main);
-      padding: 7px 10px;
+      padding: 8px 10px;
       font-size: 13px;
-      outline: none;
-      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+      flex: 1;
+      min-width: 200px;
     }
 
     .input::placeholder {
       color: #9ca3af;
-    }
-
-    .input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px #bfdbfe;
     }
 
     .btn {
@@ -152,7 +171,7 @@
       gap: 6px;
       border-radius: 8px;
       border: 1px solid transparent;
-      padding: 7px 13px;
+      padding: 8px 14px;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
@@ -179,14 +198,28 @@
     .hint {
       font-size: 11px;
       color: var(--text-muted);
-      margin-top: 3px;
+      margin-top: 4px;
     }
 
-    .filter-group {
+    .toolbar {
       display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 160px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .toolbar-left {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .toolbar-right {
+      font-size: 12px;
+      color: var(--text-muted);
     }
 
     .select {
@@ -202,67 +235,13 @@
       background: var(--bg-card);
       border-radius: 12px;
       border: 1px solid var(--border-subtle);
-      box-shadow: 0 1px 2px rgba(15,23,42,0.05);
       padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .overview-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .overview-title {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .overview-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .count-label {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      border: 1px solid var(--border-strong);
-      background: #f9fafb;
-      color: #374151;
-      white-space: nowrap;
-    }
-
-    .tag.callable {
-      background: var(--tag-callable);
-      border-color: #bbf7d0;
-      color: var(--tag-callable-text);
-    }
-
-    .tag.point {
-      background: var(--tag-point);
-      border-color: #bfdbfe;
-      color: var(--tag-point-text);
+      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
     }
 
     .table-wrapper {
-      border-radius: 10px;
-      border: 1px solid var(--border-subtle);
-      overflow: hidden;
-      background: #ffffff;
+      overflow-x: auto;
+      margin-top: 4px;
     }
 
     table {
@@ -275,7 +254,8 @@
       background: #f3f4f6;
     }
 
-    th, td {
+    th,
+    td {
       padding: 6px 8px;
       text-align: left;
       border-bottom: 1px solid #e5e7eb;
@@ -284,12 +264,13 @@
 
     th {
       font-size: 11px;
-      font-weight: 500;
       color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
     }
 
     td {
-      color: var(--text-main);
+      font-size: 12px;
     }
 
     .issuer-cell {
@@ -300,113 +281,125 @@
     .cell-muted {
       font-size: 11px;
       color: var(--text-muted);
+      margin-top: 2px;
     }
 
-    .no-data {
-      text-align: center;
+    .pill {
+      display: inline-flex;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      font-size: 11px;
+      color: #374151;
+    }
+
+    .pill.callable {
+      border-color: #a7f3d0;
+      background: #ecfdf3;
+      color: #047857;
+    }
+
+    .pill.point {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .empty-state {
       font-size: 12px;
       color: var(--text-muted);
-      padding: 10px;
-    }
-
-    .type-cell {
       text-align: center;
-    }
-
-    @media (max-width: 900px) {
-      th:nth-child(4),
-      td:nth-child(4),
-      th:nth-child(6),
-      td:nth-child(6),
-      th:nth-child(7),
-      td:nth-child(7) {
-        display: none;
-      }
+      padding: 16px 0;
     }
   </style>
 </head>
 <body>
   <div class="shell">
-    <header class="topbar">
+    <header>
       <div class="brand">
         <div class="brand-logo">SN</div>
         <div class="brand-text">
           <h1>Structured Note Overview</h1>
-          <p>High-level grid across multiple CUSIPs.</p>
+          <p>Grid view of key terms by CUSIP.</p>
         </div>
       </div>
       <div class="top-note">
-        Internal advisor view &nbsp;·&nbsp; Prototype
+        Prototype &nbsp;·&nbsp; Data sources: SEC filings (via API)
       </div>
     </header>
 
-    <section class="search-strip">
-      <div class="search-group">
-        <label for="cusip-input">CUSIPs</label>
-        <input
-          id="cusip-input"
-          class="input"
-          placeholder="Enter one or more CUSIPs, separated by commas"
-        />
-        <div class="hint">
-          Example: <em>12345ABC9</em> or <em>12345ABC9, 11111AAA1, 22222BBB2</em>
+    <main>
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Add CUSIPs</div>
+            <div class="card-subtitle">
+              Enter one or more CUSIPs to populate the overview table.
+            </div>
+          </div>
+          <span class="badge-soft">Overview table</span>
         </div>
-      </div>
 
-      <div class="filter-group">
-        <label for="type-filter">Type filter</label>
-        <select id="type-filter" class="select">
-          <option value="all">All notes</option>
-          <option value="callable">Callable only</option>
-          <option value="point">Point-to-point only</option>
-        </select>
-      </div>
-
-      <div style="display:flex; flex-direction:column; gap:4px;">
-        <label style="visibility:hidden;">Actions</label>
-        <div style="display:flex; gap:6px;">
-          <button id="add-btn" class="btn">Add to table</button>
-          <button id="clear-btn" class="btn secondary">Clear all</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="overview-card">
-      <div class="overview-header">
         <div>
-          <div class="overview-title">Notes in view</div>
-          <div class="overview-subtitle">
-            Each row represents one CUSIP. Columns summarise issuer, underliers, economics and type.
+          <label for="cusip-input">CUSIP(s)</label>
+          <div class="search-row">
+            <input
+              id="cusip-input"
+              class="input"
+              placeholder="e.g. 48136H7D4 or 48136H7D4, 48134K541"
+            />
+            <button id="add-btn" class="btn">Add to table</button>
+            <button id="clear-btn" class="btn secondary">Clear all</button>
+          </div>
+          <div class="hint">
+            You can paste multiple CUSIPs separated by commas. Each CUSIP will be
+            looked up via the /api/analyze-cusip endpoint.
           </div>
         </div>
-        <div class="count-label" id="count-label">No CUSIPs added yet.</div>
-      </div>
 
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>CUSIP</th>
-              <th>Issuer</th>
-              <th>Underlier(s)</th>
-              <th>Initial values</th>
-              <th>Payout profile</th>
-              <th>Initial est. value</th>
-              <th>Total fees</th>
-              <th>Final observation date</th>
-              <th>Type</th>
-            </tr>
-          </thead>
-          <tbody id="notes-body">
-            <tr>
-              <td colspan="9" class="no-data">
-                No notes yet. Add one or more CUSIPs above to see the grid.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <label for="type-filter" style="margin: 0; font-weight: 400;">Filter by profile:</label>
+            <select id="type-filter" class="select">
+              <option value="all">All notes</option>
+              <option value="point">Point-to-point</option>
+              <option value="callable">Callable</option>
+            </select>
+          </div>
+          <div class="toolbar-right">
+            <span id="count-label">No CUSIPs added yet.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="overview-card">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>CUSIP</th>
+                <th>Issuer</th>
+                <th>Underliers</th>
+                <th>Initial values</th>
+                <th>Payout profile</th>
+                <th>Initial est. value</th>
+                <th>Total fees</th>
+                <th>Final observation date</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody id="notes-body">
+              <tr>
+                <td colspan="9" class="empty-state">
+                  No CUSIPs added yet. Add one above to see it here.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script>
@@ -417,102 +410,91 @@
     const notesBody = document.getElementById('notes-body');
     const countLabel = document.getElementById('count-label');
 
-    // Fetch real note data from the backend API for a given CUSIP
+    // NEW: call the live /api/analyze-cusip endpoint for a single CUSIP
     async function fetchNoteForCusip(cusipRaw) {
       const cusip = cusipRaw.trim().toUpperCase();
       if (!cusip) return null;
 
-      const url = `/api/analyze-cusip?cusip=${encodeURIComponent(cusip)}`;
-      let res;
       try {
-        res = await fetch(url);
+        const resp = await fetch(`/api/analyze-cusip?cusip=${encodeURIComponent(cusip)}`);
+        if (!resp.ok) {
+          console.error('API error for CUSIP', cusip, resp.status);
+          return {
+            cusip,
+            issuer: 'Filing not found',
+            underliers: {
+              description: 'No SEC filing located',
+              detail: 'The CUSIP did not return a filing from the search API.'
+            },
+            initialValues: '—',
+            payoutProfile: '—',
+            initialEstValue: '—',
+            totalFees: '—',
+            finalObs: '—',
+            type: 'point'
+          };
+        }
+
+        const data = await resp.json();
+        const m = data.filingMeta || {};
+
+        return {
+          cusip,
+          issuer: m.companyName || 'Unknown issuer',
+          underliers: {
+            description: 'To be parsed from filing',
+            detail: [
+              m.formType || '',
+              m.filedAt ? `filed ${m.filedAt}` : ''
+            ].filter(Boolean).join(' · ')
+          },
+          initialValues: 'To be parsed',
+          payoutProfile: 'To be parsed',
+          initialEstValue: 'To be parsed',
+          totalFees: 'To be parsed',
+          finalObs: 'To be parsed',
+          // For now, treat all as "callable" so they show up in that filter too.
+          // Later we’ll classify based on the parsed terms from ChatGPT.
+          type: 'callable'
+        };
       } catch (err) {
-        console.error('Network error while fetching note for CUSIP', cusip, err);
-        alert(`Could not reach the server for CUSIP ${cusip}. Please try again.`);
+        console.error('Error calling /api/analyze-cusip', err);
         return null;
       }
-
-      if (!res.ok) {
-        console.error('API error status', res.status, 'for CUSIP', cusip);
-        alert(`The server returned an error for CUSIP ${cusip} (status ${res.status}).`);
-        return null;
-      }
-
-      let data;
-      try {
-        data = await res.json();
-      } catch (err) {
-        console.error('Failed to parse JSON for CUSIP', cusip, err);
-        alert(`Received an invalid response for CUSIP ${cusip}.`);
-        return null;
-      }
-
-      // Map API response into the shape used by the overview table
-      // Fallbacks are used for fields that are not yet provided by the API.
-      const underliers = Array.isArray(data.underliers) ? data.underliers : [];
-      const underlierTickers =
-        underliers.map(u => u.ticker).filter(Boolean).join(' / ') || '—';
-      const underlierNames =
-        underliers.map(u => u.name).filter(Boolean).join(' · ') || '';
-      const initialValues = underliers.length
-        ? underliers
-            .map(u => {
-              const level =
-                typeof u.initial_level === 'number'
-                  ? u.initial_level.toFixed(2)
-                  : '—';
-              return `${u.ticker || 'UL'}: ${level}`;
-            })
-            .join(' · ')
-        : '—';
-
-      const isCallable =
-        typeof data.product_type === 'string' &&
-        data.product_type.toLowerCase().includes('call');
-
-      const type = isCallable ? 'callable' : 'point';
-
-      return {
-        cusip,
-        issuer: data.issuer || '—',
-        underliers: {
-          description: underlierTickers || '—',
-          detail: underlierNames || (underliers.length ? 'Underlier basket' : '')
-        },
-        initialValues,
-        payoutProfile: data.profile_key || data.product_type || '—',
-        initialEstValue: data.initial_estimated_value || '—',
-        totalFees: data.total_fees || '—',
-        finalObs: data.final_observation_date || data.maturity_date || '—',
-        type
-      };
     }
 
     const state = {
-      notes: []
+      notes: [] // array of note objects returned by fetchNoteForCusip
     };
 
     function renderTable() {
-      const selectedType = typeFilter.value; // 'all' | 'callable' | 'point'
+      const filter = typeFilter.value;
       let visible = state.notes;
 
-      if (selectedType !== 'all') {
-        visible = visible.filter(note => note.type === selectedType);
+      if (filter === 'point') {
+        visible = visible.filter(n => n.type === 'point');
+      } else if (filter === 'callable') {
+        visible = visible.filter(n => n.type === 'callable');
       }
 
       notesBody.innerHTML = '';
 
-      if (!visible.length) {
-        notesBody.innerHTML = `
-          <tr>
-            <td colspan="9" class="no-data">
-              No notes match the current filter.
-            </td>
-          </tr>
+      if (visible.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td colspan="9" class="empty-state">
+            ${
+              state.notes.length
+                ? 'All rows filtered out. Adjust filters to see notes.'
+                : 'No CUSIPs added yet.'
+            }
+          </td>
         `;
-        countLabel.textContent = state.notes.length
-          ? 'All rows filtered out. Adjust filters to see notes.'
-          : 'No CUSIPs added yet.';
+        notesBody.appendChild(tr);
+        countLabel.textContent =
+          state.notes.length === 0
+            ? 'No CUSIPs added yet.'
+            : `0 of ${state.notes.length} notes in view (filter applied).`;
         return;
       }
 
@@ -532,8 +514,8 @@
           <td>${note.initialEstValue}</td>
           <td>${note.totalFees}</td>
           <td>${note.finalObs}</td>
-          <td class="type-cell">
-            <span class="tag ${note.type === 'callable' ? 'callable' : 'point'}">
+          <td>
+            <span class="pill ${note.type === 'callable' ? 'callable' : 'point'}">
               ${note.type === 'callable' ? 'Callable' : 'Point-to-point'}
             </span>
           </td>
@@ -554,22 +536,14 @@
       if (!input.trim()) return;
 
       const parts = input.split(',');
-      const fetches = parts
-        .map(p => p.trim())
-        .filter(Boolean)
-        .map(p => fetchNoteForCusip(p));
-
-      if (!fetches.length) return;
-
-      const results = await Promise.all(fetches);
-
-      results.forEach(note => {
-        if (!note) return;
+      for (const p of parts) {
+        const note = await fetchNoteForCusip(p);
+        if (!note) continue;
         // avoid duplicates by CUSIP
         if (!state.notes.find(n => n.cusip === note.cusip)) {
           state.notes.push(note);
         }
-      });
+      }
 
       renderTable();
     });
