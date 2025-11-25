@@ -1,3 +1,11 @@
+// api/parse-filing.js
+
+// This route:
+// 1) Takes ?cusip, ?accessionNo, ?cik
+// 2) Calls /api/filing-html to get the HTML snippet from sec.gov
+// 3) Sends that HTML to OpenAI with instructions to return JSON
+// 4) Cleans off any ```json fences and returns the parsed JSON
+
 export default async function handler(req, res) {
   try {
     const { cusip, accessionNo, cik } = req.query;
@@ -5,57 +13,55 @@ export default async function handler(req, res) {
     if (!cusip || !accessionNo || !cik) {
       return res.status(400).json({
         message:
-          "Missing required query params. Example: ?cusip=48136H7D4&accessionNo=0001213900-25-104551&cik=19617"
+          "Missing query parameters. Required: cusip, accessionNo, cik. Example: /api/parse-filing?cusip=48136H7D4&accessionNo=0001213900-25-104551&cik=19617"
       });
     }
 
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-    if (!openaiApiKey) {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) {
       return res.status(500).json({
         message: "OPENAI_API_KEY environment variable is not set in Vercel."
       });
     }
 
-    // --- 1) Get HTML preview from our own /api/filing-html endpoint ---
-
+    // --- 1) Get HTML snippet from our existing /api/filing-html route ----
+    // In production this is your Vercel domain. For local dev you can adjust.
     const baseUrl =
       process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000";
+        : "https://structured-note-analyzer.vercel.app";
 
-    const filingUrl = `${baseUrl}/api/filing-html?accessionNo=${encodeURIComponent(
+    const filingHtmlUrl = `${baseUrl}/api/filing-html?accessionNo=${encodeURIComponent(
       accessionNo
     )}&cik=${encodeURIComponent(cik)}`;
 
-    const filingRes = await fetch(filingUrl);
-    const filingJson = await filingRes.json();
+    const filingResp = await fetch(filingHtmlUrl);
 
-    if (!filingRes.ok) {
-      return res.status(filingRes.status).json({
-        message: "Error fetching filing HTML via /api/filing-html",
-        filingUrl,
-        filingJson
+    if (!filingResp.ok) {
+      const raw = await filingResp.text();
+      return res.status(502).json({
+        message: "Error calling /api/filing-html",
+        status: filingResp.status,
+        body: raw
       });
     }
 
-    const htmlPreview = filingJson.htmlPreview;
+    const filingData = await filingResp.json();
+    const htmlPreview = filingData.htmlPreview;
+
     if (!htmlPreview) {
       return res.status(500).json({
-        message: "filing-html did not return htmlPreview.",
-        filingJson
+        message:
+          "No htmlPreview returned from /api/filing-html. Cannot parse terms.",
+        filingData
       });
     }
 
-    // --- 2) Call OpenAI to extract structured note terms ---
+    // --- 2) Call OpenAI to extract terms from HTML snippet -------------
 
-    const systemPrompt = `
-You are a structured note prospectus parser.
-You receive HTML from a pricing supplement (SEC 424B2 / FWP) and must extract key trade terms.
-
-Always return a SINGLE JSON object ONLY, with NO surrounding text and NO markdown code fences.
-If something is missing or not clearly stated, use null for that field.
-
-The JSON MUST have exactly this shape:
+    // Helper prompt text describing the JSON shape we want.
+    const schemaDescription = `
+You must return a SINGLE JSON object with the following shape:
 
 {
   "issuer": string | null,
@@ -80,109 +86,155 @@ The JSON MUST have exactly this shape:
       "ticker": string | null,
       "role": string | null,
       "initial_level": number | null,
-      "weighting": string | null,
+      "weighting": number | null,
       "worst_of_or_basket": string | null
     }
   ],
   "payoff_today": {
     "amount_per_1000": number | null,
     "pct_of_par": number | null,
-    "status": string,
-    "status_variant": string,
-    "explanation": string,
-    "subtitle": string
+    "status": string | null,
+    "status_variant": string | null,
+    "explanation": string | null,
+    "subtitle": string | null
   }
 }
 
-Do NOT include any markdown, backticks, or commentary – only valid JSON.
-`;
+Rules:
+- Use null if a field is not stated or cannot be determined.
+- Dates can be left as human-readable strings (e.g. "October 29, 2025").
+- "worst_of_or_basket" should be "worst_of", "basket", or null.
+- "status_variant" should be one of "upside", "downside", "neutral", or null.
+- DO NOT include any extra fields.
+- DO NOT include any comments.
+- DO NOT wrap the JSON in backticks or a code block.
+Return ONLY the JSON.
+`.trim();
 
-    const userPrompt = `
-Here is a fragment of the pricing supplement HTML from sec.gov.
+    const openaiResponse = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openaiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini", // you can change this if you prefer another model
+          temperature: 0,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You extract structured terms from U.S. SEC structured note pricing supplements for financial advisors."
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text:
+                    schemaDescription +
+                    `
 
-CUSIP: ${cusip}
-CIK: ${cik}
-Accession No: ${accessionNo}
+Context:
+- CUSIP: ${cusip}
+- CIK: ${cik}
+- Accession number: ${accessionNo}
 
-HTML (truncated):
-${htmlPreview.slice(0, 12000)}
-`;
+Here is an HTML snippet from the pricing supplement. Extract the note terms into the JSON shape above, following all rules.`
+                },
+                {
+                  type: "text",
+                  text: htmlPreview.slice(0, 6000) // avoid sending huge content
+                }
+              ]
+            }
+          ]
+        })
+      }
+    );
 
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiApiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ]
-      })
-    });
+    const rawOpenAI = await openaiResponse.text();
 
-    const openaiRawText = await openaiRes.text();
-
-    if (!openaiRes.ok) {
-      return res.status(openaiRes.status).json({
+    if (!openaiResponse.ok) {
+      // Surface the error from OpenAI so we can debug easily
+      return res.status(openaiResponse.status).json({
         message: "OpenAI API returned a non-OK status",
-        status: openaiRes.status,
-        body: openaiRawText
+        status: openaiResponse.status,
+        body: rawOpenAI
       });
     }
 
     let openaiData;
     try {
-      openaiData = JSON.parse(openaiRawText);
+      openaiData = JSON.parse(rawOpenAI);
     } catch (e) {
       return res.status(500).json({
-        message: "Could not parse JSON from OpenAI response",
-        raw: openaiRawText
+        message: "Could not parse JSON from OpenAI API response",
+        raw: rawOpenAI
       });
     }
 
-    const content = openaiData?.choices?.[0]?.message?.content;
-    if (!content || typeof content !== "string") {
+    const assistantContent =
+      openaiData?.choices?.[0]?.message?.content || "";
+
+    if (!assistantContent) {
       return res.status(500).json({
-        message: "OpenAI response did not contain message.content as a string",
-        openaiData
+        message:
+          "OpenAI response did not contain message.content. Check model / prompt.",
+        openaiRaw: openaiData
       });
     }
 
-    // --- 3) Make sure we have clean JSON (strip code fences if any still appear) ---
+    // --- 3) Clean off ```json fences if the model ignored our instructions ---
 
-    let jsonText = content.trim();
+    function extractJsonFromText(text) {
+      let trimmed = text.trim();
 
-    if (jsonText.startsWith("```")) {
-      // Remove leading ``` or ```json and trailing ```
-      jsonText = jsonText
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/```$/, "")
-        .trim();
+      if (trimmed.startsWith("```")) {
+        // remove starting ``` or ```json
+        const firstNewline = trimmed.indexOf("\n");
+        if (firstNewline !== -1) {
+          trimmed = trimmed.substring(firstNewline + 1);
+        } else {
+          // whole thing is just ```...``` one line; strip leading fences
+          trimmed = trimmed.replace(/^```[a-zA-Z0-9]*\s*/g, "");
+        }
+
+        // remove trailing ```
+        const lastFence = trimmed.lastIndexOf("```");
+        if (lastFence !== -1) {
+          trimmed = trimmed.substring(0, lastFence);
+        }
+      }
+
+      return trimmed.trim();
     }
 
-    let note;
+    const cleaned = extractJsonFromText(assistantContent);
+
+    let parsed;
     try {
-      note = JSON.parse(jsonText);
+      parsed = JSON.parse(cleaned);
     } catch (e) {
       return res.status(500).json({
-        message: "Assistant did not return valid JSON in message.content. Check the prompt.",
-        assistantContent: content
+        message:
+          "Assistant did not return valid JSON even after cleaning. See assistantContent and cleaned.",
+        assistantContent,
+        cleaned
       });
     }
 
-    // --- 4) Return structured note terms ---
+    // --- 4) Return the parsed JSON plus a bit of meta -------------------
 
     return res.status(200).json({
-      source: "sec.gov + OpenAI",
+      source: "sec.gov+openai",
       cusip,
       accessionNo,
       cik,
       htmlPreviewLength: htmlPreview.length,
-      note
+      terms: parsed
     });
   } catch (err) {
     console.error(err);
@@ -192,4 +244,5 @@ ${htmlPreview.slice(0, 12000)}
     });
   }
 }
+
 
