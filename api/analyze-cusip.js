@@ -1,65 +1,90 @@
-import secAPI from "sec-api";
-
-secAPI.setApiKey(process.env.SEC_API_KEY);
-
 export default async function handler(req, res) {
   try {
-    const { cusip } = req.query;
+    const cusip = req.query.cusip;
+    const apiKey = process.env.SEC_API_KEY;
 
     if (!cusip) {
-      return res.status(400).json({ error: "Missing CUSIP parameter" });
+      return res.status(400).json({ message: "CUSIP missing" });
     }
 
-    // Step 1: CUSIP FULL-TEXT SEARCH
-    const searchResponse = await secAPI.search({
-      query: {
-        query_string: {
-          query: `\"${cusip}\" AND (formType:424B2 OR formType:FWP)`
-        }
-      },
-      from: 0,
-      size: 3,
-      sort: [{ filedAt: { order: "desc" } }]
-    });
-
-    if (!searchResponse.filings || searchResponse.filings.length === 0) {
-      return res.status(404).json({
-        source: "sec-api.io",
-        cusip,
-        filingsCount: 0,
-        message: "No filings found containing this CUSIP via full-text search."
+    if (!apiKey) {
+      return res.status(500).json({
+        message: "SEC_API_KEY environment variable is not set on Vercel."
       });
     }
 
-    // Step 2: Select the most recent filing
-    const filing = searchResponse.filings[0];
+    // Full-Text Search query: find filings that contain this exact CUSIP
+    const fullTextQuery = {
+      query: `"${cusip}"`,                 // exact phrase search
+      formTypes: ["424B2", "FWP"],        // pricing supplements
+      from: 0,
+      size: 10,                           // first 10 matches is plenty
+      sort: [{ filedAt: { order: "desc" } }]
+    };
 
-    // Step 3: Fetch FULL HTML of that filing
-    const fullHtml = await secAPI.filing({
-      accessionNo: filing.accessionNo
+    // Call sec-api.io Full-Text Search API via REST
+    // API key passed as query param: ?apiKey=YOUR_KEY
+    const url = "https://api.sec-api.io/full-text-search?apiKey=" +
+      encodeURIComponent(apiKey);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(fullTextQuery)
     });
 
-    // Step 4: Return the HTML
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      return res.status(502).json({
+        message: "sec-api.io returned a non-OK status",
+        status: response.status,
+        body: text
+      });
+    }
+
+    const data = await response.json();
+
+    const filings = Array.isArray(data.filings) ? data.filings : [];
+    const filingsCount = filings.length;
+
+    if (filingsCount === 0) {
+      return res.status(404).json({
+        source: "sec-api.io",
+        cusip,
+        filingsCount,
+        filingMeta: null,
+        message:
+          "No 424B2 / FWP filings found for this CUSIP (full-text search)."
+      });
+    }
+
+    // Take the most recent match
+    const first = filings[0];
+
     return res.status(200).json({
       source: "sec-api.io",
       cusip,
-      filingsCount: searchResponse.filings.length,
+      filingsCount,
       filingMeta: {
-        accessionNo: filing.accessionNo,
-        formType: filing.formType,
-        filedAt: filing.filedAt,
-        cik: filing.cik
+        accessionNo: first.accessionNo,
+        formType: first.formType,
+        filedAt: first.filedAt,
+        cik: first.cik,
+        companyName: first.companyName,
+        linkToHtml: first.linkToHtml,
+        linkToFilingDetails: first.linkToFilingDetails
       },
-      htmlLength: fullHtml.length,
-      htmlPreview: fullHtml.substring(0, 2000) + "...",
-      message: "Returning full HTML of matched pricing supplement."
+      message:
+        "Found at least one filing containing this CUSIP via full-text search."
     });
-
   } catch (err) {
-    console.error("Error in API:", err);
+    console.error(err);
     return res.status(500).json({
       message: "Internal server error",
       error: err.toString()
     });
   }
 }
+
