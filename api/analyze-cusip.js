@@ -15,15 +15,10 @@ export default async function handler(req, res) {
       });
     }
 
-    // 1) Full-text search via sec-api.io using only the CUSIP
+    // Full-text search query: look for this CUSIP anywhere in the filing text,
+    // then take the most recent hit.
     const searchBody = {
-      query: {
-        query_string: {
-          // Just search for this CUSIP anywhere in the filing text,
-          // then we take the most recent hit.
-          query: `"${cusip}"`
-        }
-      },
+      query: `"${cusip}"`,
       from: 0,
       size: 1, // only the latest filing
       sort: [{ filedAt: { order: "desc" } }]
@@ -80,86 +75,19 @@ export default async function handler(req, res) {
     // Take the most recent filing
     const filing = filings[0] || {};
 
-    const accessionNo = filing.accessionNo || null;
-    const formType = filing.formType || null;
-    const filedAt = filing.filedAt || null;
-    const cikRaw = filing.cik || null;
-    const companyName =
-      filing.companyNameLong || filing.companyName || null;
-
-    // 2) Try to build a direct SEC HTML URL using CIK + accession number
-    let linkToHtml = filing.linkToHtml || null;
-    let linkToFilingDetails = filing.linkToFilingDetails || null;
-    let htmlFromIndex = null;
-
-    if (!linkToHtml && accessionNo && cikRaw) {
-      // Example SEC path pattern:
-      // https://www.sec.gov/Archives/edgar/data/{cikWithoutLeadingZeros}/{accessionNoNoDashes}/index.json
-      const cikNoZeros = String(cikRaw).replace(/^0+/, "");
-      const accDir = accessionNo.replace(/-/g, "");
-
-      const indexUrl = `https://www.sec.gov/Archives/edgar/data/${cikNoZeros}/${accDir}/index.json`;
-
-      try {
-        const indexResp = await fetch(indexUrl, {
-          headers: {
-            // SEC asks for a User-Agent. Use something descriptive for your app.
-            "User-Agent": "structured-note-analyzer/1.0",
-            Accept: "application/json"
-          }
-        });
-
-        if (indexResp.ok) {
-          const indexData = await indexResp.json();
-          const items =
-            indexData &&
-            indexData.directory &&
-            Array.isArray(indexData.directory.item)
-              ? indexData.directory.item
-              : [];
-
-          // Look for an .htm/.html file that is likely the main document
-          const htmlItem =
-            items.find(
-              (it) =>
-                typeof it.name === "string" &&
-                (it.name.toLowerCase().endsWith(".htm") ||
-                  it.name.toLowerCase().endsWith(".html"))
-            ) || null;
-
-          if (htmlItem) {
-            htmlFromIndex = `https://www.sec.gov/Archives/edgar/data/${cikNoZeros}/${accDir}/${htmlItem.name}`;
-            linkToHtml = linkToHtml || htmlFromIndex;
-          }
-        } else {
-          // If SEC index doesn’t respond, we just carry on without crashing
-          console.error(
-            "SEC index returned non-OK status",
-            indexResp.status
-          );
-        }
-      } catch (indexErr) {
-        console.error("Error fetching SEC index.json", indexErr);
-      }
-    }
-
-    // Optional: we don’t strictly need a "details" URL, but keep it if sec-api provided it
-    linkToFilingDetails = linkToFilingDetails || null;
-
     return res.status(200).json({
       source: "sec-api.io",
       cusip,
       filingsCount: filings.length,
       filingMeta: {
-        accessionNo,
-        formType,
-        filedAt,
-        cik: cikRaw,
-        companyName
+        accessionNo: filing.accessionNo || null,
+        formType: filing.formType || null,
+        filedAt: filing.filedAt || null,
+        cik: filing.cik || null,
+        companyName: filing.companyNameLong || filing.companyName || null
       },
-      linkToHtml: linkToHtml || null,
-      linkToFilingDetails,
-      htmlFromSecIndex: htmlFromIndex, // may be null if we couldn’t infer it
+      linkToHtml: filing.linkToHtml || null,
+      linkToFilingDetails: filing.linkToFilingDetails || null,
       message:
         "Found at least one filing containing this CUSIP via full-text search."
     });
