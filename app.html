@@ -14,10 +14,14 @@
       --accent-soft: #eff6ff;
       --text-main: #111827;
       --text-muted: #6b7280;
+      --success: #15803d;
+      --danger: #b91c1c;
       --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -32,7 +36,7 @@
 
     .shell {
       width: 100%;
-      max-width: 1160px;
+      max-width: 1120px;
       background: #f9fafb;
       border-radius: 16px;
       padding: 20px 20px 18px;
@@ -85,75 +89,43 @@
 
     .brand-text p {
       margin: 2px 0 0;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
     }
 
     .top-note {
       font-size: 12px;
       color: var(--text-muted);
+      text-align: right;
     }
 
-    .card {
+    .search-strip {
       background: var(--bg-card);
       border-radius: 12px;
       border: 1px solid var(--border-subtle);
-      padding: 14px 14px 12px;
-      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
-    }
-
-    .card-header {
-      margin-bottom: 10px;
-    }
-
-    .card-title-row {
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.04);
       display: flex;
-      justify-content: space-between;
-      align-items: baseline;
+      flex-direction: column;
       gap: 8px;
+    }
+
+    .search-row {
+      display: flex;
       flex-wrap: wrap;
-    }
-
-    .card-title {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .card-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .badge-soft {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: #e5e7eb;
-      color: #374151;
-      border: 1px solid #d1d5db;
-      white-space: nowrap;
+      gap: 8px;
+      align-items: center;
     }
 
     label {
-      display: block;
       font-size: 12px;
-      margin-bottom: 4px;
       color: #374151;
       font-weight: 500;
     }
 
-    .input-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1.8fr) auto auto;
-      gap: 8px;
-      align-items: end;
-    }
-
-    @media (max-width: 720px) {
-      .input-row {
-        grid-template-columns: minmax(0, 1fr);
-      }
+    .input-group {
+      flex: 1;
+      min-width: 180px;
     }
 
     .input {
@@ -181,7 +153,6 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
       border-radius: 8px;
       border: 1px solid transparent;
       padding: 7px 14px;
@@ -208,21 +179,25 @@
       background: #f3f4f6;
     }
 
-    .filters {
-      margin-top: 10px;
+    .filters-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
       flex-wrap: wrap;
-      font-size: 12px;
-      color: var(--text-muted);
+      gap: 8px;
+      margin-top: 6px;
     }
 
-    .filter-group {
+    .filters-left {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      color: var(--text-muted);
     }
 
     .select {
@@ -238,13 +213,41 @@
       background: var(--bg-card);
       border-radius: 12px;
       border: 1px solid var(--border-subtle);
-      padding: 12px 12px 10px;
-      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+      box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .overview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .overview-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .overview-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .count-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: right;
     }
 
     .table-wrapper {
-      margin-top: 6px;
-      border-radius: 10px;
+      margin-top: 4px;
+      border-radius: 8px;
       border: 1px solid var(--border-subtle);
       overflow: auto;
       background: #ffffff;
@@ -253,6 +256,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 12px;
       min-width: 880px;
     }
 
@@ -260,62 +264,54 @@
       background: #f3f4f6;
     }
 
-    th, td {
-      font-size: 12px;
-      padding: 8px 8px;
+    th,
+    td {
+      padding: 6px 8px;
       text-align: left;
       border-bottom: 1px solid #e5e7eb;
-      vertical-align: top;
     }
 
     th {
       font-weight: 500;
       color: var(--text-muted);
+      font-size: 11px;
       white-space: nowrap;
     }
 
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    .issuer-cell {
-      font-weight: 500;
+    td {
+      vertical-align: top;
       font-size: 12px;
-    }
-
-    .cell-muted {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      border: 1px solid transparent;
-    }
-
-    .type-point {
-      border-color: #bbf7d0;
-      background: #ecfdf3;
-      color: #166534;
-    }
-
-    .type-callable {
-      border-color: #bfdbfe;
-      background: #eff6ff;
-      color: #1d4ed8;
     }
 
     .no-data {
       text-align: center;
-      font-size: 12px;
       color: var(--text-muted);
+      font-size: 12px;
       padding: 16px 8px;
+    }
+
+    .type-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      border: 1px solid var(--border-strong);
+      background: #f9fafb;
+      color: #374151;
+    }
+
+    .type-pill.callable {
+      border-color: #facc15;
+      background: #fefce8;
+      color: #854d0e;
+    }
+
+    .type-pill.point {
+      border-color: #a7f3d0;
+      background: #ecfdf3;
+      color: #166534;
     }
   </style>
 </head>
@@ -326,67 +322,48 @@
         <div class="brand-logo">SN</div>
         <div class="brand-text">
           <h1>Structured Note Overview</h1>
-          <p>Compare key terms across multiple CUSIPs at a glance.</p>
+          <p>Grid view of key terms by CUSIP.</p>
         </div>
       </div>
       <div class="top-note">
-        Internal prototype · Data sourced from SEC filings & parsing logic
+        Internal prototype · Live SEC + OpenAI parsing for each CUSIP
       </div>
     </header>
 
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title-row">
-          <div>
-            <div class="card-title">Add notes by CUSIP</div>
-            <div class="card-subtitle">
-              Enter one or more CUSIPs and we’ll fetch and parse the latest pricing supplement.
-            </div>
-          </div>
-          <span class="badge-soft" id="count-label">No CUSIPs added yet.</span>
-        </div>
-      </div>
-
-      <div class="input-row">
-        <div>
-          <label for="cusip-input">CUSIP(s)</label>
+    <section class="search-strip">
+      <div class="search-row">
+        <div class="input-group">
+          <label for="cusip-input">Add CUSIP(s)</label>
           <input
             id="cusip-input"
-            type="text"
             class="input"
-            placeholder="Enter one or more CUSIPs, separated by commas"
+            placeholder="e.g. 48136H7D4 or multiple, separated by commas"
           />
         </div>
-
         <button id="add-btn" class="btn">Add to table</button>
-        <button id="clear-btn" class="btn secondary">Clear table</button>
+        <button id="clear-btn" class="btn secondary">Clear all</button>
       </div>
-
-      <div class="filters">
-        <div class="filter-group">
-          <label for="type-filter">View</label>
+      <div class="filters-row">
+        <div class="filters-left">
+          <span class="filter-label">Type filter:</span>
           <select id="type-filter" class="select">
-            <option value="all">All notes</option>
-            <option value="point">Point-to-point only</option>
-            <option value="callable">Callable only</option>
+            <option value="all">All</option>
+            <option value="point">Point-to-point</option>
+            <option value="callable">Callable</option>
           </select>
         </div>
-        <div>
-          <span style="font-size: 11px; color: var(--text-muted);">
-            Note: Each CUSIP requires a live lookup and parsing step, so responses may take a few seconds.
-          </span>
+        <div class="count-label" id="count-label">
+          No notes yet. Add one or more CUSIPs above to see the grid.
         </div>
       </div>
-    </div>
+    </section>
 
     <div class="overview-card">
-      <div class="card-header">
-        <div class="card-title-row">
-          <div>
-            <div class="card-title">Note grid</div>
-            <div class="card-subtitle">
-              High-level comparison view. Detailed note pages can be added later from each row.
-            </div>
+      <div class="overview-header">
+        <div>
+          <div class="overview-title">Note grid</div>
+          <div class="overview-subtitle">
+            Each row represents one CUSIP, using parsed terms from the latest pricing supplement.
           </div>
         </div>
       </div>
@@ -427,163 +404,168 @@
     const countLabel = document.getElementById('count-label');
 
     const state = {
-      notes: [] // rows currently in the table
+      notes: [],              // array of parsed note objects
+      loadingCusips: new Set() // track which CUSIPs are currently loading
     };
 
-    function setLoading(isLoading) {
-      if (isLoading) {
-        addBtn.disabled = true;
-        addBtn.textContent = 'Loading…';
-      } else {
-        addBtn.disabled = false;
-        addBtn.textContent = 'Add to table';
+    function updateCountLabel() {
+      const total = state.notes.length;
+      const loading = state.loadingCusips.size;
+
+      if (loading > 0) {
+        countLabel.textContent = `Loading ${loading} CUSIP${loading > 1 ? 's' : ''}… (${total} loaded)`;
+        return;
       }
+
+      if (!total) {
+        countLabel.textContent = 'No notes yet. Add one or more CUSIPs above to see the grid.';
+        return;
+      }
+
+      const filter = typeFilter.value;
+      let visible = state.notes;
+      if (filter === 'point') {
+        visible = visible.filter(n => n.type === 'point');
+      } else if (filter === 'callable') {
+        visible = visible.filter(n => n.type === 'callable');
+      }
+
+      const shown = visible.length;
+      countLabel.textContent =
+        shown === total
+          ? `${shown} note${shown === 1 ? '' : 's'} in view.`
+          : `${shown} of ${total} note${total === 1 ? '' : 's'} in view.`;
     }
 
-    function transformNoteForTable(cusip, apiNote) {
-      const underliers = Array.isArray(apiNote.underliers) ? apiNote.underliers : [];
+    function classifyTypeFromNote(parsedNote) {
+      const pt = (parsedNote.product_type || '').toLowerCase();
+      const pk = (parsedNote.profile_key || '').toLowerCase();
 
-      let description = '—';
-      if (underliers.length === 1) {
-        description = 'Single underlier';
-      } else if (underliers.length > 1) {
-        const isWorstOf = underliers.some(u =>
-          String(u.worst_of_or_basket || '').toLowerCase().includes('worst')
-        );
-        description = isWorstOf ? 'Worst-of basket' : 'Basket';
+      if (
+        pt.includes('autocall') ||
+        pt.includes('auto-call') ||
+        pt.includes('autocallable') ||
+        pk.includes('autocall') ||
+        pk.includes('auto-call') ||
+        pk.includes('autocallable')
+      ) {
+        return 'callable';
       }
-
-      const detail = underliers.length
-        ? underliers
-            .map(u => {
-              const parts = [];
-              if (u.ticker) parts.push(u.ticker);
-              if (u.name) parts.push(u.name);
-              if (u.weighting != null) parts.push(`(${u.weighting})`);
-              return parts.join(' ');
-            })
-            .join(' · ')
-        : '—';
-
-      const initialValues = underliers.length
-        ? underliers
-            .map(u => {
-              const label = u.ticker || u.name || 'Underlier';
-              const lvl =
-                typeof u.initial_level === 'number'
-                  ? u.initial_level.toFixed(4)
-                  : '—';
-              return `${label}: ${lvl}`;
-            })
-            .join(' · ')
-        : '—';
-
-      const payoutProfile =
-        apiNote.product_type ||
-        apiNote.profile_key ||
-        (apiNote.coupon && apiNote.coupon.label) ||
-        '—';
-
-      let initialEstValue = '—';
-      let totalFees = '—';
-      if (apiNote.payoff_today && typeof apiNote.payoff_today.pct_of_par === 'number') {
-        const pct = apiNote.payoff_today.pct_of_par;
-        initialEstValue = `${pct.toFixed(2)}% of par`;
-        const feePct = 100 - pct;
-        if (!Number.isNaN(feePct)) {
-          totalFees = `${feePct.toFixed(2)}% approx.`;
-        }
-      }
-
-      const finalObs =
-        apiNote.final_observation_date ||
-        apiNote.maturity_date ||
-        '—';
-
-      const joinSource = `${apiNote.product_type || ''} ${apiNote.profile_key || ''}`.toLowerCase();
-      const type = joinSource.includes('call') ? 'callable' : 'point';
-
-      return {
-        cusip,
-        issuer: apiNote.issuer || '—',
-        underliers: {
-          description,
-          detail
-        },
-        initialValues,
-        payoutProfile,
-        initialEstValue,
-        totalFees,
-        finalObs,
-        type
-      };
+      return 'point';
     }
 
-    async function fetchNoteFromApis(cusipRaw) {
+    function formatUnderlierDisplay(underliers) {
+      if (!Array.isArray(underliers) || underliers.length === 0) return '—';
+
+      const labels = underliers.map(u => u.ticker || u.name || '').filter(Boolean);
+      const base = labels.join(' / ') || '—';
+
+      const flags = underliers
+        .map(u => (u.worst_of_or_basket || '').toLowerCase())
+        .filter(Boolean);
+
+      const isWorstOf = flags.some(f => f.includes('worst'));
+      const isBasket = flags.some(f => f.includes('basket'));
+
+      if (isWorstOf) return `${base} (worst-of)`;
+      if (isBasket) return `${base} (basket)`;
+
+      return base;
+    }
+
+    function formatInitialValues(underliers) {
+      if (!Array.isArray(underliers) || underliers.length === 0) return '—';
+
+      return underliers
+        .map(u => {
+          const label = u.ticker || u.name || '';
+          let level = '—';
+          if (typeof u.initial_level === 'number') {
+            level = u.initial_level.toFixed(4);
+          } else if (u.initial_level) {
+            level = u.initial_level;
+          }
+          return `${label}: ${level}`;
+        })
+        .join(' · ');
+    }
+
+    function formatInitialEstimatedValue(payoffToday) {
+      if (!payoffToday || typeof payoffToday !== 'object') return '—';
+
+      if (typeof payoffToday.pct_of_par === 'number') {
+        return `${payoffToday.pct_of_par.toFixed(2)}% of par`;
+      }
+      if (typeof payoffToday.amount_per_1000 === 'number') {
+        return `$${payoffToday.amount_per_1000.toFixed(2)} per 1,000`;
+      }
+      if (typeof payoffToday.status === 'string' && payoffToday.status.trim()) {
+        return payoffToday.status.trim();
+      }
+      return '—';
+    }
+
+    async function fetchNoteForCusip(cusipRaw) {
       const cusip = cusipRaw.trim().toUpperCase();
       if (!cusip) {
-        throw new Error('Empty CUSIP');
+        throw new Error('CUSIP is empty');
       }
 
-      // Step 1: find the latest filing that contains this CUSIP
-      const analyzeResp = await fetch(`/api/analyze-cusip?cusip=${encodeURIComponent(cusip)}`);
-      const analyzeText = await analyzeResp.text();
-      let analyzeJson;
-      try {
-        analyzeJson = JSON.parse(analyzeText);
-      } catch (e) {
-        console.error('Could not parse JSON from /api/analyze-cusip:', analyzeText);
-        throw new Error('Unexpected response from filing search.');
-      }
+      // 1) Look up the filing that contains this CUSIP
+      const analyzeRes = await fetch(`/api/analyze-cusip?cusip=${encodeURIComponent(cusip)}`);
+      const analyzeData = await analyzeRes.json();
 
-      if (!analyzeResp.ok) {
-        const msg = analyzeJson && analyzeJson.message
-          ? analyzeJson.message
-          : `Error from /api/analyze-cusip (${analyzeResp.status})`;
+      if (!analyzeRes.ok) {
+        const msg = analyzeData && analyzeData.message ? analyzeData.message : 'Error from /api/analyze-cusip';
         throw new Error(msg);
       }
 
-      const meta = analyzeJson.filingMeta || {};
-      const accessionNo = meta.accessionNo;
-      const cik = meta.cik;
-
-      if (!accessionNo || !cik) {
-        throw new Error('Filing metadata missing accessionNo or CIK.');
+      const meta = analyzeData.filingMeta || {};
+      if (!meta.accessionNo || !meta.cik) {
+        throw new Error('Filing metadata missing accessionNo or cik.');
       }
 
-      // Step 2: fetch & parse the filing into structured terms
-      const parseUrl =
-        `/api/parse-filing?cusip=${encodeURIComponent(cusip)}` +
-        `&accessionNo=${encodeURIComponent(accessionNo)}` +
-        `&cik=${encodeURIComponent(cik)}`;
+      // 2) Ask the backend to parse that filing into our note schema
+      const parseUrl = `/api/parse-filing?cusip=${encodeURIComponent(
+        cusip
+      )}&accessionNo=${encodeURIComponent(meta.accessionNo)}&cik=${encodeURIComponent(meta.cik)}`;
 
-      const parseResp = await fetch(parseUrl);
-      const parseText = await parseResp.text();
-      let parseJson;
-      try {
-        parseJson = JSON.parse(parseText);
-      } catch (e) {
-        console.error('Could not parse JSON from /api/parse-filing:', parseText);
-        throw new Error('Unexpected response when parsing filing.');
-      }
+      const parseRes = await fetch(parseUrl);
+      const parseData = await parseRes.json();
 
-      if (!parseResp.ok) {
-        const msg = parseJson && parseJson.message
-          ? parseJson.message
-          : `Error from /api/parse-filing (${parseResp.status})`;
+      if (!parseRes.ok) {
+        const msg = parseData && parseData.message ? parseData.message : 'Error from /api/parse-filing';
         throw new Error(msg);
       }
 
-      if (!parseJson.note) {
-        throw new Error('Backend did not return a parsed note.');
-      }
+      const parsedNote = parseData.note || {};
+      const underliers = Array.isArray(parsedNote.underliers) ? parsedNote.underliers : [];
+      const payoffToday = parsedNote.payoff_today || {};
 
-      return transformNoteForTable(cusip, parseJson.note);
+      const type = classifyTypeFromNote(parsedNote);
+
+      return {
+        cusip: parseData.cusip || cusip,
+        issuer:
+          parsedNote.issuer ||
+          (analyzeData.filingMeta && (analyzeData.filingMeta.companyName || '')) ||
+          '—',
+        underlierDisplay: formatUnderlierDisplay(underliers),
+        initialValues: formatInitialValues(underliers),
+        payoutProfile: parsedNote.profile_key || parsedNote.product_type || '—',
+        initialEstValue: formatInitialEstimatedValue(payoffToday),
+        // Total fees are not yet parsed; we can add that later when the model extracts them.
+        totalFees: '—',
+        finalObs: parsedNote.maturity_date || '—',
+        type,
+        rawUnderliers: underliers,
+        rawNote: parsedNote
+      };
     }
 
     function renderTable() {
       const filter = typeFilter.value;
-      let visible = state.notes.slice();
+      let visible = state.notes;
 
       if (filter === 'point') {
         visible = visible.filter(n => n.type === 'point');
@@ -593,19 +575,17 @@
 
       notesBody.innerHTML = '';
 
-      if (visible.length === 0) {
+      if (!visible.length) {
         notesBody.innerHTML = `
           <tr>
             <td colspan="9" class="no-data">
               ${state.notes.length
-                ? 'All rows filtered out. Adjust filters to see notes.'
+                ? 'No notes match the current filter.'
                 : 'No notes yet. Add one or more CUSIPs above to see the grid.'}
             </td>
           </tr>
         `;
-        countLabel.textContent = state.notes.length
-          ? 'All rows filtered out. Adjust filters.'
-          : 'No CUSIPs added yet.';
+        updateCountLabel();
         return;
       }
 
@@ -613,28 +593,23 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${note.cusip}</td>
+          <td>${note.issuer || '—'}</td>
+          <td>${note.underlierDisplay || '—'}</td>
+          <td>${note.initialValues || '—'}</td>
+          <td>${note.payoutProfile || '—'}</td>
+          <td>${note.initialEstValue || '—'}</td>
+          <td>${note.totalFees || '—'}</td>
+          <td>${note.finalObs || '—'}</td>
           <td>
-            <div class="issuer-cell">${note.issuer}</div>
-          </td>
-          <td>
-            <div>${note.underliers.description}</div>
-            <div class="cell-muted">${note.underliers.detail}</div>
-          </td>
-          <td>${note.initialValues}</td>
-          <td>${note.payoutProfile}</td>
-          <td>${note.initialEstValue}</td>
-          <td>${note.totalFees}</td>
-          <td>${note.finalObs}</td>
-          <td>
-            <span class="tag ${note.type === 'point' ? 'type-point' : 'type-callable'}">
-              ${note.type === 'point' ? 'Point-to-point' : 'Callable'}
+            <span class="type-pill ${note.type === 'callable' ? 'callable' : 'point'}">
+              ${note.type === 'callable' ? 'Callable' : 'Point-to-point'}
             </span>
           </td>
         `;
         notesBody.appendChild(tr);
       });
 
-      countLabel.textContent = `${visible.length} note${visible.length === 1 ? '' : 's'} shown`;
+      updateCountLabel();
     }
 
     addBtn.addEventListener('click', async () => {
@@ -648,30 +623,36 @@
 
       if (!parts.length) return;
 
-      setLoading(true);
-      try {
-        for (const raw of parts) {
-          const cusip = raw.toUpperCase();
-          if (state.notes.find(n => n.cusip === cusip)) {
-            continue; // avoid duplicates
-          }
+      for (const raw of parts) {
+        const cusip = raw.toUpperCase();
 
-          try {
-            const note = await fetchNoteFromApis(cusip);
-            state.notes.push(note);
-          } catch (err) {
-            console.error(err);
-            alert(`Could not load data for ${cusip}: ${err.message || err}`);
-          }
+        // Skip if we already have this CUSIP loaded
+        if (state.notes.some(n => n.cusip === cusip)) {
+          continue;
         }
-        renderTable();
-      } finally {
-        setLoading(false);
+
+        try {
+          state.loadingCusips.add(cusip);
+          updateCountLabel();
+
+          const note = await fetchNoteForCusip(cusip);
+          state.notes.push(note);
+          renderTable();
+        } catch (err) {
+          console.error(err);
+          countLabel.textContent = `Error loading ${cusip}: ${err.message || err}`;
+        } finally {
+          state.loadingCusips.delete(cusip);
+          updateCountLabel();
+        }
       }
+
+      cusipInput.value = '';
     });
 
     clearBtn.addEventListener('click', () => {
       state.notes = [];
+      state.loadingCusips.clear();
       renderTable();
     });
 
@@ -681,10 +662,8 @@
       if (e.key === 'Enter') addBtn.click();
     });
 
-    // Initial render
+    // Initial state
     renderTable();
   </script>
-
 </body>
 </html>
-
