@@ -1,0 +1,419 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/detail.html b/detail.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..d6959d98077cc2878d62ad3bd5e20ce5140b06fc
+--- /dev/null
++++ b/detail.html
+@@ -0,0 +1,409 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1" />
++  <title>CUSIP performance</title>
++  <style>
++    :root {
++      --bg-page: #f3f4f6;
++      --bg-card: #ffffff;
++      --border-subtle: #e5e7eb;
++      --border-strong: #d1d5db;
++      --accent: #2563eb;
++      --accent-soft: #eff6ff;
++      --text-main: #111827;
++      --text-muted: #6b7280;
++      --success: #15803d;
++      --danger: #b91c1c;
++      --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
++    }
++
++    * { box-sizing: border-box; }
++
++    body {
++      margin: 0;
++      font-family: var(--font);
++      background: var(--bg-page);
++      color: var(--text-main);
++      display: flex;
++      justify-content: center;
++      padding: 20px 12px 32px;
++    }
++
++    .layout {
++      width: 100%;
++      max-width: 1100px;
++      display: flex;
++      flex-direction: column;
++      gap: 14px;
++    }
++
++    header.topbar {
++      display: flex;
++      align-items: center;
++      justify-content: space-between;
++      gap: 10px;
++      flex-wrap: wrap;
++    }
++
++    .brand {
++      display: flex;
++      align-items: center;
++      gap: 10px;
++    }
++
++    .brand-logo {
++      width: 32px;
++      height: 32px;
++      border-radius: 8px;
++      background: var(--accent-soft);
++      display: flex;
++      align-items: center;
++      justify-content: center;
++      color: var(--accent);
++      font-weight: 600;
++      font-size: 16px;
++      border: 1px solid #bfdbfe;
++    }
++
++    .brand-text h1 {
++      margin: 0;
++      font-size: 18px;
++      font-weight: 600;
++    }
++
++    .brand-text p {
++      margin: 2px 0 0;
++      font-size: 12px;
++      color: var(--text-muted);
++    }
++
++    a.back-link {
++      font-size: 13px;
++      color: var(--accent);
++      text-decoration: none;
++      font-weight: 600;
++    }
++
++    a.back-link:hover { text-decoration: underline; }
++
++    .card {
++      background: var(--bg-card);
++      border: 1px solid var(--border-subtle);
++      border-radius: 12px;
++      padding: 14px 16px;
++      box-shadow: 0 8px 20px rgba(15,23,42,0.06);
++    }
++
++    .card h2 {
++      margin: 0 0 8px;
++      font-size: 16px;
++    }
++
++    .stack { display: flex; flex-direction: column; gap: 10px; }
++
++    .grid {
++      display: grid;
++      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
++      gap: 10px;
++    }
++
++    .field-label { font-size: 12px; color: var(--text-muted); }
++    .field-value { font-size: 14px; font-weight: 600; }
++
++    .pill {
++      display: inline-flex;
++      align-items: center;
++      padding: 4px 8px;
++      border-radius: 999px;
++      font-size: 11px;
++      border: 1px solid var(--border-strong);
++      background: #f9fafb;
++      color: #374151;
++    }
++
++    .pill.callable { background: #fefce8; border-color: #facc15; color: #854d0e; }
++    .pill.point { background: #ecfdf3; border-color: #a7f3d0; color: #166534; }
++
++    table { width: 100%; border-collapse: collapse; font-size: 12px; }
++    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #e5e7eb; }
++    th { color: var(--text-muted); font-weight: 600; font-size: 11px; }
++
++    .input {
++      width: 100%;
++      padding: 8px 10px;
++      border-radius: 8px;
++      border: 1px solid var(--border-strong);
++      background: #fff;
++      font-size: 13px;
++    }
++
++    .badge { padding: 4px 6px; border-radius: 8px; font-size: 11px; }
++    .badge.success { background: #ecfdf3; color: #166534; border: 1px solid #bbf7d0; }
++    .badge.warning { background: #fefce8; color: #854d0e; border: 1px solid #facc15; }
++
++    .metric {
++      display: flex;
++      flex-direction: column;
++      gap: 2px;
++    }
++
++    .metric .label { font-size: 12px; color: var(--text-muted); }
++    .metric .value { font-size: 20px; font-weight: 700; }
++  </style>
++</head>
++<body>
++  <div class="layout">
++    <header class="topbar">
++      <div class="brand">
++        <div class="brand-logo">SN</div>
++        <div class="brand-text">
++          <h1>CUSIP performance detail</h1>
++          <p>Economics snapshot and what-if payoff as of today.</p>
++        </div>
++      </div>
++      <a class="back-link" href="app.html">← Back to grid</a>
++    </header>
++
++    <div class="card" id="summary-card">
++      <h2 id="cusip-title">CUSIP</h2>
++      <div class="grid" id="summary-grid"></div>
++    </div>
++
++    <div class="card stack">
++      <div>
++        <h2>Economics</h2>
++        <p class="field-label" id="economics-hint">Parsed from the latest pricing supplement.</p>
++      </div>
++      <div class="grid" id="economics-grid"></div>
++      <div class="stack" id="call-schedule"></div>
++    </div>
++
++    <div class="card stack">
++      <div>
++        <h2>Performance as of today</h2>
++        <p class="field-label">Update current underlier levels to see estimated payoff if the note matured today.</p>
++      </div>
++      <div class="grid" id="underlier-inputs"></div>
++      <div class="grid">
++        <div class="metric">
++          <span class="label">Worst underlier performance</span>
++          <span class="value" id="worst-perf">—</span>
++        </div>
++        <div class="metric">
++          <span class="label">Estimated payoff per $1,000 notional</span>
++          <span class="value" id="payoff-estimate">—</span>
++        </div>
++        <div class="metric">
++          <span class="label">Status</span>
++          <span class="value" id="status-label">—</span>
++        </div>
++      </div>
++    </div>
++  </div>
++
++  <script>
++    const params = new URLSearchParams(window.location.search);
++    const cusip = (params.get('cusip') || '').toUpperCase();
++    const stored = cusip ? sessionStorage.getItem(`note-detail:${cusip}`) : null;
++    const note = stored ? JSON.parse(stored) : null;
++
++    const summaryGrid = document.getElementById('summary-grid');
++    const economicsGrid = document.getElementById('economics-grid');
++    const callScheduleEl = document.getElementById('call-schedule');
++    const underlierInputs = document.getElementById('underlier-inputs');
++    const worstPerfEl = document.getElementById('worst-perf');
++    const payoffEl = document.getElementById('payoff-estimate');
++    const statusEl = document.getElementById('status-label');
++    const titleEl = document.getElementById('cusip-title');
++    const econHint = document.getElementById('economics-hint');
++
++    if (!note) {
++      document.body.innerHTML = '<div style="padding:24px; font-family:var(--font);">No note data found for this CUSIP. Please return to the grid and select a row.</div>';
++    }
++
++    function formatNumber(value, decimals = 2) {
++      if (typeof value !== 'number' || Number.isNaN(value)) return '—';
++      return value.toFixed(decimals);
++    }
++
++    function extractPct(value) {
++      if (!value) return null;
++      const match = String(value).match(/-?\d+(?:\.\d+)?/);
++      return match ? parseFloat(match[0]) : null;
++    }
++
++    function renderSummary() {
++      titleEl.textContent = `CUSIP ${note.cusip}`;
++      summaryGrid.innerHTML = '';
++
++      const items = [
++        { label: 'Issuer', value: note.issuer || '—' },
++        { label: 'Underlier(s)', value: note.underlierDisplay || '—' },
++        { label: 'Initial values', value: note.initialValues || '—' },
++        { label: 'Profile', value: note.payoutProfile || '—' },
++        { label: 'Type', value: `<span class="pill ${note.type === 'callable' ? 'callable' : 'point'}">${note.type === 'callable' ? 'Callable' : 'Point-to-point'}</span>` },
++      ];
++
++      items.forEach(item => {
++        const div = document.createElement('div');
++        div.innerHTML = `<div class="field-label">${item.label}</div><div class="field-value">${item.value}</div>`;
++        summaryGrid.appendChild(div);
++      });
++    }
++
++    function renderEconomics() {
++      economicsGrid.innerHTML = '';
++      const raw = note.rawNote || {};
++      const coupon = raw.coupon || {};
++      const protection = raw.protection || {};
++      const fees = raw.fees || {};
++
++      const entries = [
++        { label: 'Coupon', value: coupon.label || coupon.structure || '—' },
++        { label: 'Coupon barrier', value: coupon.barrier || '—' },
++        { label: 'Principal protection', value: protection.principal || protection.label || '—' },
++        { label: 'Downside barrier', value: protection.downside || protection.barrier_level || '—' },
++        { label: 'Maturity date', value: raw.maturity_date || '—' },
++        { label: 'Trade date', value: raw.trade_date || '—' },
++        { label: 'Estimated value', value: note.initialEstValue || '—' },
++        { label: 'Total fees', value: note.totalFees || formatFees(fees) },
++      ];
++
++      entries.forEach(entry => {
++        const div = document.createElement('div');
++        div.innerHTML = `<div class="field-label">${entry.label}</div><div class="field-value">${entry.value}</div>`;
++        economicsGrid.appendChild(div);
++      });
++
++      const schedule = Array.isArray(raw.call_schedule) ? raw.call_schedule.filter(s => s && (s.observation_date || s.coupon_rate_pct || s.call_price_pct_of_par)) : [];
++      callScheduleEl.innerHTML = '';
++      if (schedule.length) {
++        const header = document.createElement('div');
++        header.innerHTML = '<div class="field-label">Call schedule</div>';
++        callScheduleEl.appendChild(header);
++
++        const table = document.createElement('table');
++        table.innerHTML = `
++          <thead>
++            <tr>
++              <th>Observation</th>
++              <th>Coupon %</th>
++              <th>Auto-call condition</th>
++              <th>Call price (% of par)</th>
++            </tr>
++          </thead>
++          <tbody></tbody>
++        `;
++        const tbody = table.querySelector('tbody');
++        schedule.forEach(row => {
++          const tr = document.createElement('tr');
++          tr.innerHTML = `
++            <td>${row.observation_date || '—'}</td>
++            <td>${formatNumber(row.coupon_rate_pct) || '—'}</td>
++            <td>${row.auto_call_condition || '—'}</td>
++            <td>${formatNumber(row.call_price_pct_of_par) || '—'}</td>
++          `;
++          tbody.appendChild(tr);
++        });
++        callScheduleEl.appendChild(table);
++      } else {
++        callScheduleEl.innerHTML = '<div class="field-label">No call schedule detected.</div>';
++      }
++    }
++
++    function formatFees(fees) {
++      const parts = [];
++      if (typeof fees.estimated_value_pct_of_par === 'number') {
++        parts.push(`Est. value ${fees.estimated_value_pct_of_par.toFixed(2)}% of par`);
++      }
++      if (typeof fees.sales_commission_pct === 'number') {
++        parts.push(`Sales commission ${fees.sales_commission_pct.toFixed(2)}%`);
++      }
++      if (typeof fees.hedging_costs_pct === 'number') {
++        parts.push(`Hedging ${fees.hedging_costs_pct.toFixed(2)}%`);
++      }
++      if (fees.other_fees_note) {
++        parts.push(fees.other_fees_note);
++      }
++      return parts.length ? parts.join(' · ') : '—';
++    }
++
++    function renderPerformanceInputs() {
++      underlierInputs.innerHTML = '';
++      const underliers = note.rawUnderliers || [];
++
++      underliers.forEach((u, idx) => {
++        const wrapper = document.createElement('div');
++        wrapper.innerHTML = `
++          <div class="field-label">${u.ticker || u.name || 'Underlier ' + (idx + 1)} current level</div>
++          <input class="input" type="number" step="any" data-index="${idx}" value="${u.initial_level ?? ''}" placeholder="Enter current level" />
++          <div class="field-label">Initial level: ${u.initial_level ?? '—'}</div>
++        `;
++        underlierInputs.appendChild(wrapper);
++      });
++
++      underlierInputs.querySelectorAll('input').forEach(input => {
++        input.addEventListener('input', calculatePerformance);
++      });
++    }
++
++    function calculatePerformance() {
++      const underliers = note.rawUnderliers || [];
++      if (!underliers.length) return;
++
++      const performances = underliers.map((u, idx) => {
++        const input = underlierInputs.querySelector(`input[data-index="${idx}"]`);
++        const current = parseFloat(input.value);
++        if (!u.initial_level || Number.isNaN(current)) return null;
++        const pctChange = (current - u.initial_level) / u.initial_level * 100;
++        return pctChange;
++      }).filter(v => v !== null);
++
++      if (!performances.length) {
++        worstPerfEl.textContent = '—';
++        payoffEl.textContent = '—';
++        statusEl.textContent = 'Waiting for inputs';
++        return;
++      }
++
++      const worst = Math.min(...performances);
++      worstPerfEl.textContent = `${worst.toFixed(2)}%`;
++
++      const barrierPct = extractPct(note.rawNote?.protection?.downside || note.rawNote?.protection?.barrier_level);
++      const payoff = estimatePayoff(worst, barrierPct);
++      payoffEl.textContent = `$${payoff.toFixed(2)}`;
++
++      const status = payoff >= 1000 ? 'At or above par' : 'Below par';
++      statusEl.textContent = status;
++    }
++
++    function estimatePayoff(worstPerfPct, barrierPct) {
++      const downside = typeof barrierPct === 'number' ? barrierPct : -100;
++      if (worstPerfPct >= 0) {
++        return 1000; // at par when all underliers up
++      }
++      if (worstPerfPct >= downside) {
++        return 1000; // protected until barrier breached
++      }
++      // downside participation past barrier
++      const drop = 1 + worstPerfPct / 100;
++      return Math.max(0, 1000 * drop);
++    }
++
++    function init() {
++      if (!note) return;
++      renderSummary();
++      renderEconomics();
++      renderPerformanceInputs();
++      calculatePerformance();
++      if (!note.rawNote) {
++        econHint.textContent = 'Raw parsed note not available. Only grid data is shown.';
++      }
++    }
++
++    init();
++  </script>
++</body>
++</html>
+ 
+EOF
+)
